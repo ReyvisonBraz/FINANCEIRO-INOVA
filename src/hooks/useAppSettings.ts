@@ -31,7 +31,7 @@ export const useAppSettings = () => {
   const fetchSettings = useCallback(async () => {
     try {
       const data = await api.get('/api/settings');
-      if (data) setSettings(data);
+      if (data) setSettings(data.data);
     } catch (err) {
       console.error("Failed to fetch settings", err);
       showToast("Erro ao carregar configurações.", "error");

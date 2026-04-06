@@ -18,12 +18,13 @@ import { ClientPayment } from '../types';
 export const ClientPaymentsPage: React.FC = () => {
   const { showToast } = useToast();
   const { 
-    clientPaymentsQuery,
+    clientPayments,
     paymentsPage,
     setPaymentsPage,
     addPaymentMutation,
     deletePaymentMutation,
-    recordPaymentMutation
+    recordPaymentMutation,
+    refetch
   } = useClientPayments();
   
   const { customers } = useCustomers();
@@ -62,9 +63,11 @@ export const ClientPaymentsPage: React.FC = () => {
     setCustomerRegistrationSource
   } = useAppStore();
 
-  const clientPayments = clientPaymentsQuery.data || { data: [], meta: { page: 1, totalPages: 1, total: 0, limit: 10 } };
+  const clientPaymentsData = clientPayments || { data: [], meta: { page: 1, totalPages: 1, total: 0, limit: 10 } };
+  const clientPaymentsList = clientPaymentsData?.data || [];
+  const clientPaymentsMeta = clientPaymentsData?.meta || { page: 1, totalPages: 1, total: 0, limit: 10 };
 
-  const filteredClientPayments = clientPayments.data.filter(payment => {
+  const filteredClientPayments = clientPaymentsList.filter(payment => {
     const matchesSearch = payment.customerName.toLowerCase().includes(paymentSearchTerm.toLowerCase()) || 
                           payment.description.toLowerCase().includes(paymentSearchTerm.toLowerCase());
     
@@ -168,10 +171,10 @@ export const ClientPaymentsPage: React.FC = () => {
     
     try {
       await recordPaymentMutation.mutateAsync({
-        paymentId: isRecordingPayment.id,
+        id: isRecordingPayment.id,
         amount: data.amount,
         date: new Date(data.date).toISOString(),
-        userId: currentUser?.id
+        updatedBy: currentUser?.id
       });
       setIsRecordingPayment(null);
       showToast('Pagamento registrado com sucesso!', 'success');
@@ -195,7 +198,7 @@ export const ClientPaymentsPage: React.FC = () => {
         try {
           const res = await fetch(`/api/client-payments/group/${saleId}`, { method: 'DELETE' });
           if (res.ok) {
-            clientPaymentsQuery.refetch();
+            refetch();
             showToast('Venda excluída com sucesso.', 'success');
           }
         } catch (err) {
@@ -233,10 +236,10 @@ export const ClientPaymentsPage: React.FC = () => {
       handleAddClientPayment={handleAddClientPayment}
       isSaving={addPaymentMutation.isPending || recordPaymentMutation.isPending}
       pagination={{
-        currentPage: clientPayments.meta.page,
-        totalPages: clientPayments.meta.totalPages,
-        totalItems: clientPayments.meta.total,
-        limit: clientPayments.meta.limit
+        currentPage: clientPaymentsMeta.page,
+        totalPages: clientPaymentsMeta.totalPages,
+        totalItems: clientPaymentsMeta.total,
+        limit: clientPaymentsMeta.limit
       }}
       onPageChange={setPaymentsPage}
       isAddingClientPayment={isAddingClientPayment}

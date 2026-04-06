@@ -2,10 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { AppSettings, Category } from '../types';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useToast } from '../components/ui/Toast';
 
-export function useSettings(showToast: (message: string, type: 'success' | 'error') => void) {
+export function useSettings() {
   const queryClient = useQueryClient();
   const { setSettings, setCategories } = useSettingsStore();
+  const { showToast } = useToast();
 
   const { data: settings, isLoading: isLoadingSettings } = useQuery({
     queryKey: ['settings'],

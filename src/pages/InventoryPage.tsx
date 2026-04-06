@@ -28,7 +28,7 @@ export const InventoryPage: React.FC = () => {
     inventoryItems, 
     saveInventoryItemAPI, 
     deleteInventoryItemAPI
-  } = useInventory(showToast);
+  } = useInventory();
 
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
 

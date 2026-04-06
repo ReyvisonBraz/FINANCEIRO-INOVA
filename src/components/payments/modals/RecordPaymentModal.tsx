@@ -22,7 +22,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
     handleSubmit,
     reset,
     formState: { errors }
-  } = useForm<RecordPaymentFormData>({
+  } = useForm({
     resolver: zodResolver(recordPaymentSchema),
     defaultValues: {
       amount: 0,

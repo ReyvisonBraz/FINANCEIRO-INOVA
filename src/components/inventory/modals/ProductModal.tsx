@@ -26,14 +26,14 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     watch,
     setValue,
     formState: { errors, isSubmitting }
-  } = useForm<ProductFormData>({
+  } = useForm({
     resolver: zodResolver(productSchema),
     defaultValues: {
       name: '',
       category: 'product',
       sku: '',
-      unitPrice: 0 as any,
-      stockLevel: '0' as any
+      unitPrice: 0,
+      stockLevel: 0
     }
   });
 
@@ -46,16 +46,16 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           name: editingItem.name,
           category: editingItem.category,
           sku: editingItem.sku || '',
-          unitPrice: editingItem.unitPrice.toString(),
-          stockLevel: editingItem.stockLevel.toString()
+          unitPrice: editingItem.unitPrice,
+          stockLevel: editingItem.stockLevel
         });
       } else {
         reset({
           name: '',
           category: 'product',
           sku: '',
-          unitPrice: '' as any,
-          stockLevel: '0' as any
+          unitPrice: 0,
+          stockLevel: 0
         });
       }
     }

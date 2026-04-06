@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api';
-import { ServiceOrder } from '../types';
+import { serviceOrderService } from '../services';
+import type { ServiceOrder } from '../types';
 import { useServiceOrderStore } from '../store/useServiceOrderStore';
 import { useFilterStore } from '../store/useFilterStore';
+import { useToast } from '../components/ui/Toast';
 
-export const useServiceOrders = (showToast?: (message: string, type: 'success' | 'error') => void) => {
+export const useServiceOrders = () => {
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
   const {
     serviceOrdersPage, setServiceOrdersPage,
@@ -18,7 +20,6 @@ export const useServiceOrders = (showToast?: (message: string, type: 'success' |
     osDateFilter
   } = useFilterStore();
 
-  // Query para buscar ordens de serviço
   const { data: serviceOrdersData, isLoading, isError, refetch } = useQuery({
     queryKey: [
       'service-orders', 
@@ -30,132 +31,122 @@ export const useServiceOrders = (showToast?: (message: string, type: 'success' |
       osDateFilter
     ],
     queryFn: async () => {
-      const query = new URLSearchParams({
-        page: serviceOrdersPage.toString(),
-        limit: '20',
+      return await serviceOrderService.getAll({
+        page: serviceOrdersPage,
+        limit: 20,
         search: osSearchTerm,
         status: osStatusFilter,
         priority: osPriorityFilter,
-        sortBy: osSortBy,
-        dateFilter: osDateFilter
+        sortBy: osSortBy as any,
+        dateFilter: osDateFilter as any
       });
-
-      const { data } = await api.get(`/service-orders?${query.toString()}`);
-      return data;
     },
   });
 
-  // Queries para dados de configuração (caching automático)
   const { data: serviceOrderStatuses } = useQuery({
     queryKey: ['service-order-statuses'],
     queryFn: async () => {
-      const { data } = await api.get('/service-order-statuses');
-      return data;
+      return await serviceOrderService.getStatuses();
     },
-    staleTime: 1000 * 60 * 5, // 5 minutos
+    staleTime: 1000 * 60 * 5,
   });
 
   const { data: equipmentTypes } = useQuery({
     queryKey: ['equipment-types'],
     queryFn: async () => {
-      const { data } = await api.get('/equipment-types');
-      return data;
+      const api = (await import('../services/api/index')).default;
+      const response = await api.get('/equipment-types');
+      return response.data;
     },
     staleTime: 1000 * 60 * 5,
   });
 
-  const { data: brands } = useQuery({
+  const { data: brandsData } = useQuery({
     queryKey: ['brands'],
     queryFn: async () => {
-      const { data } = await api.get('/brands');
-      return data;
+      return await serviceOrderService.getBrands();
     },
     staleTime: 1000 * 60 * 5,
   });
 
-  const { data: models } = useQuery({
+  const { data: modelsData } = useQuery({
     queryKey: ['models'],
     queryFn: async () => {
-      const { data } = await api.get('/models');
-      return data;
+      const models: { id: number; name: string; brandId: number }[] = [];
+      for (const brand of (brandsData || [])) {
+        const brandModels = await serviceOrderService.getModels(brand.id);
+        models.push(...brandModels.map(m => ({ ...m, brandId: brand.id })));
+      }
+      return models;
     },
     staleTime: 1000 * 60 * 5,
   });
 
-  // Mutações
   const saveMutation = useMutation({
-    mutationFn: async ({ order, id }: { order: any; id?: number }) => {
+    mutationFn: async ({ order, id }: { order: Partial<ServiceOrder>; id?: number }) => {
       if (id) {
-        const { data } = await api.put(`/service-orders/${id}`, order);
-        return data;
+        return await serviceOrderService.update(id, order);
       } else {
-        const { data } = await api.post('/service-orders', order);
-        return data;
+        return await serviceOrderService.create(order as any);
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['service-orders'] });
-      if (showToast) showToast('Ordem de serviço salva com sucesso!', 'success');
+      showToast('Ordem de serviço salva com sucesso!', 'success');
     },
     onError: (error: any) => {
       console.error('Failed to save service order', error);
-      if (showToast) showToast(error.response?.data?.error || 'Erro ao salvar ordem de serviço.', 'error');
+      showToast(error.response?.data?.error || 'Erro ao salvar ordem de serviço.', 'error');
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/service-orders/${id}`);
+      return await serviceOrderService.delete(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['service-orders'] });
-      if (showToast) showToast('Ordem de serviço excluída com sucesso!', 'success');
+      showToast('Ordem de serviço excluída com sucesso!', 'success');
     },
     onError: (error: any) => {
       console.error('Failed to delete service order', error);
-      if (showToast) showToast(error.response?.data?.error || 'Erro ao excluir ordem de serviço.', 'error');
+      showToast(error.response?.data?.error || 'Erro ao excluir ordem de serviço.', 'error');
     },
   });
 
-  // Mutações para configurações
   const addStatusMutation = useMutation({
-    mutationFn: (status: any) => api.post('/service-order-statuses', status),
+    mutationFn: async (status: any) => {
+      return await serviceOrderService.createStatus(status);
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['service-order-statuses'] }),
   });
 
   const deleteStatusMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/service-order-statuses/${id}`),
+    mutationFn: async (id: number) => {
+      return await serviceOrderService.deleteStatus(id);
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['service-order-statuses'] }),
   });
 
-  const addEquipmentTypeMutation = useMutation({
-    mutationFn: (type: any) => api.post('/equipment-types', type),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['equipment-types'] }),
-  });
-
-  const deleteEquipmentTypeMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/equipment-types/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['equipment-types'] }),
-  });
-
   const addBrandMutation = useMutation({
-    mutationFn: (brand: any) => api.post('/brands', brand),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['brands'] }),
-  });
-
-  const deleteBrandMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/brands/${id}`),
+    mutationFn: async (name: string) => {
+      return await serviceOrderService.createBrand(name);
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['brands'] }),
   });
 
   const addModelMutation = useMutation({
-    mutationFn: (model: any) => api.post('/models', model),
+    mutationFn: async ({ brandId, name }: { brandId: number; name: string }) => {
+      return await serviceOrderService.createModel(brandId, name);
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['models'] }),
   });
 
-  const deleteModelMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/models/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['models'] }),
+  const addEquipmentTypeMutation = useMutation({
+    mutationFn: async (name: string) => {
+      return await serviceOrderService.createEquipmentType(name);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['equipment-types'] }),
   });
 
   return {
@@ -164,19 +155,16 @@ export const useServiceOrders = (showToast?: (message: string, type: 'success' |
     setServiceOrdersPage,
     serviceOrderStatuses: serviceOrderStatuses || [],
     equipmentTypes: equipmentTypes || [],
-    brands: brands || [],
-    models: models || [],
+    brands: brandsData || [],
+    models: modelsData || [],
     fetchServiceOrders: refetch,
-    saveServiceOrderAPI: (order: any, id?: number) => saveMutation.mutateAsync({ order, id }),
+    saveServiceOrderAPI: (order: Partial<ServiceOrder>, id?: number) => saveMutation.mutateAsync({ order, id }),
     deleteServiceOrderAPI: (id: number) => deleteMutation.mutateAsync(id),
     addServiceOrderStatusAPI: (status: any) => addStatusMutation.mutateAsync(status),
     deleteServiceOrderStatusAPI: (id: number) => deleteStatusMutation.mutateAsync(id),
-    addEquipmentTypeAPI: (name: string, icon?: string) => addEquipmentTypeMutation.mutateAsync({ name, icon }),
-    deleteEquipmentTypeAPI: (id: number) => deleteEquipmentTypeMutation.mutateAsync(id),
-    addBrandAPI: (name: string, equipmentType: string) => addBrandMutation.mutateAsync({ name, equipmentType }),
-    deleteBrandAPI: (id: number) => deleteBrandMutation.mutateAsync(id),
-    addModelAPI: (brandId: number, name: string) => addModelMutation.mutateAsync({ brandId, name }),
-    deleteModelAPI: (id: number) => deleteModelMutation.mutateAsync(id),
+    addEquipmentTypeAPI: (name: string) => addEquipmentTypeMutation.mutateAsync(name),
+    addBrandAPI: (name: string) => addBrandMutation.mutateAsync(name),
+    addModelAPI: ({ brandId, name }: { brandId: number; name: string }) => addModelMutation.mutateAsync({ brandId, name }),
     isLoading,
     isError
   };

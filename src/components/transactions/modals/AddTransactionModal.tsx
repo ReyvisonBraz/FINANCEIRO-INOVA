@@ -27,13 +27,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     watch,
     setValue,
     formState: { errors, isSubmitting }
-  } = useForm<TransactionFormData>({
+  } = useForm({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
       description: '',
       category: '',
-      type: 'expense',
-      amount: 0 as any,
+      type: 'expense' as const,
+      amount: 0,
       date: new Date().toISOString().split('T')[0]
     }
   });

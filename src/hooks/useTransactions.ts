@@ -1,11 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api';
-import { Transaction } from '../types';
+import { transactionService } from '../services';
+import type { Transaction } from '../types';
 import { useFilterStore } from '../store/useFilterStore';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { format, endOfMonth, parseISO } from 'date-fns';
+import { useToast } from '../components/ui/Toast';
 
-export function useTransactions(showToast: (message: string, type: 'success' | 'error') => void) {
+export function useTransactions() {
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
   const { 
     transactionsPage, setTransactionsPage 
@@ -16,7 +18,33 @@ export function useTransactions(showToast: (message: string, type: 'success' | '
     filterMinAmount, filterMaxAmount
   } = useFilterStore();
 
-  // Query para buscar transações
+  const buildFilters = () => {
+    let startDateFilter: string | undefined;
+    let endDateFilter: string | undefined;
+    
+    if (dateFilterMode === 'day') {
+      startDateFilter = selectedDate;
+      endDateFilter = selectedDate;
+    } else if (dateFilterMode === 'month') {
+      startDateFilter = `${selectedMonth}-01`;
+      endDateFilter = format(endOfMonth(parseISO(`${selectedMonth}-01`)), 'yyyy-MM-dd');
+    } else if (dateFilterMode === 'range') {
+      startDateFilter = startDate;
+      endDateFilter = endDate;
+    }
+
+    return {
+      page: transactionsPage,
+      search: searchTerm,
+      type: filterType as 'all' | 'income' | 'expense',
+      category: filterCategory,
+      startDate: startDateFilter,
+      endDate: endDateFilter,
+      minAmount: filterMinAmount ? Number(filterMinAmount) : undefined,
+      maxAmount: filterMaxAmount ? Number(filterMaxAmount) : undefined,
+    };
+  };
+
   const { data: transactionsData, isLoading, isError, refetch } = useQuery({
     queryKey: [
       'transactions', 
@@ -33,38 +61,16 @@ export function useTransactions(showToast: (message: string, type: 'success' | '
       filterMaxAmount
     ],
     queryFn: async () => {
-      let url = `/transactions?page=${transactionsPage}&limit=20&search=${encodeURIComponent(searchTerm)}`;
-      
-      if (filterType !== 'all') url += `&type=${filterType}`;
-      if (filterCategory !== 'all') url += `&category=${encodeURIComponent(filterCategory)}`;
-      
-      if (dateFilterMode === 'day') {
-        url += `&startDate=${selectedDate}&endDate=${selectedDate}`;
-      } else if (dateFilterMode === 'month') {
-        const start = `${selectedMonth}-01`;
-        const end = format(endOfMonth(parseISO(`${selectedMonth}-01`)), 'yyyy-MM-dd');
-        url += `&startDate=${start}&endDate=${end}`;
-      } else if (dateFilterMode === 'range') {
-        url += `&startDate=${startDate}&endDate=${endDate}`;
-      }
-      
-      if (filterMinAmount) url += `&minAmount=${filterMinAmount}`;
-      if (filterMaxAmount) url += `&maxAmount=${filterMaxAmount}`;
-
-      const { data } = await api.get(url);
-      return data;
+      return await transactionService.getAll(buildFilters());
     },
   });
 
-  // Mutação para salvar/editar transação
   const saveMutation = useMutation({
     mutationFn: async ({ transaction, id }: { transaction: Partial<Transaction>; id?: number }) => {
       if (id) {
-        const { data } = await api.put(`/transactions/${id}`, transaction);
-        return data;
+        return await transactionService.update(id, transaction);
       } else {
-        const { data } = await api.post('/transactions', transaction);
-        return data;
+        return await transactionService.create(transaction);
       }
     },
     onSuccess: () => {
@@ -78,10 +84,9 @@ export function useTransactions(showToast: (message: string, type: 'success' | '
     },
   });
 
-  // Mutação para excluir transação
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/transactions/${id}`);
+      return await transactionService.delete(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });

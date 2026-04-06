@@ -1,28 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api';
-import { InventoryItem } from '../types';
+import { inventoryService } from '../services';
+import type { InventoryItem } from '../types';
+import { useToast } from '../components/ui/Toast';
 
-export function useInventory(showToast: (message: string, type: 'success' | 'error') => void) {
+export function useInventory() {
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
 
-  // Query para buscar itens do estoque
   const { data: inventoryItems, isLoading, isError, refetch } = useQuery({
     queryKey: ['inventory'],
     queryFn: async () => {
-      const { data } = await api.get('/inventory');
-      return data;
+      const result = await inventoryService.getAll();
+      return (result as any).data || result || [];
     },
   });
 
-  // Mutação para salvar/editar item
   const saveMutation = useMutation({
     mutationFn: async ({ item, id }: { item: Partial<InventoryItem>; id?: number }) => {
       if (id) {
-        const { data } = await api.put(`/inventory/${id}`, item);
-        return data;
+        return await inventoryService.update(id, item);
       } else {
-        const { data } = await api.post('/inventory', item);
-        return data;
+        return await inventoryService.create(item);
       }
     },
     onSuccess: () => {
@@ -35,10 +33,9 @@ export function useInventory(showToast: (message: string, type: 'success' | 'err
     },
   });
 
-  // Mutação para excluir item
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/inventory/${id}`);
+      return await inventoryService.delete(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });

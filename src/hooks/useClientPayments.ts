@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ClientPayment } from '../types';
-import { api } from '../services/api';
+import { paymentService } from '../services';
+import type { ClientPayment } from '../types';
 import { useToast } from '../components/ui/Toast';
 import { useClientPaymentStore } from '../store/useClientPaymentStore';
 import { useFilterStore } from '../store/useFilterStore';
@@ -11,39 +11,19 @@ export function useClientPayments() {
   const { paymentsPage, setPaymentsPage } = useClientPaymentStore();
   const { paymentSearchTerm } = useFilterStore();
 
-  const fetchClientPayments = async (page: number, searchTerm: string = '') => {
-    const data = await api.get(`/api/client-payments?page=${page}&limit=20&search=${searchTerm}`);
-    return data;
-  };
-
-  const clientPaymentsQuery = useQuery({
+  const { data: clientPaymentsData, isLoading, isError, refetch } = useQuery({
     queryKey: ['clientPayments', paymentsPage, paymentSearchTerm],
-    queryFn: () => fetchClientPayments(paymentsPage, paymentSearchTerm),
-  });
-
-  const addPaymentMutation = useMutation({
-    mutationFn: async (payment: Partial<ClientPayment>) => {
-      return await api.post('/api/client-payments', payment);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientPayments'] });
-      showToast('Pagamento salvo com sucesso!', 'success');
-    },
-    onError: (error: any) => {
-      console.error('Failed to save payment', error);
-      showToast(error.message || 'Erro ao salvar pagamento.', 'error');
+    queryFn: async () => {
+      return await paymentService.getAll({ page: paymentsPage, search: paymentSearchTerm });
     },
   });
 
   const savePaymentMutation = useMutation({
     mutationFn: async ({ payment, id }: { payment: Partial<ClientPayment>; id?: number }) => {
-      const url = id ? `/api/client-payments/${id}` : '/api/client-payments';
-      const method = id ? 'PUT' : 'POST';
-      
-      if (method === 'PUT') {
-        return await api.put(url, payment);
+      if (id) {
+        return await paymentService.update(id, payment);
       } else {
-        return await api.post(url, payment);
+        return await paymentService.create(payment);
       }
     },
     onSuccess: () => {
@@ -58,7 +38,7 @@ export function useClientPayments() {
 
   const deletePaymentMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/api/client-payments/${id}`);
+      return await paymentService.delete(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientPayments'] });
@@ -72,7 +52,7 @@ export function useClientPayments() {
 
   const recordPaymentMutation = useMutation({
     mutationFn: async ({ id, amount, date, updatedBy }: { id: number; amount: number; date: string; updatedBy?: number }) => {
-      return await api.post(`/api/client-payments/${id}/pay`, { amount, date, updatedBy });
+      return await paymentService.recordPayment(id, { amount, date, updatedBy });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientPayments'] });
@@ -84,16 +64,24 @@ export function useClientPayments() {
     },
   });
 
+  const safeClientPayments = (clientPaymentsData && clientPaymentsData.data) 
+    ? clientPaymentsData 
+    : { data: [], meta: { page: 1, totalPages: 1, total: 0, limit: 20 } };
+
   return {
-    clientPaymentsQuery,
-    clientPayments: clientPaymentsQuery.data || { data: [], meta: { page: 1, totalPages: 1, total: 0, limit: 10 } },
+    clientPayments: safeClientPayments,
+    clientPaymentsQuery: clientPaymentsData,
     paymentsPage,
     setPaymentsPage,
-    addPaymentMutation,
+    isLoading,
+    isError,
+    refetch,
     savePaymentMutation,
     deletePaymentMutation,
     recordPaymentMutation,
-    saveClientPaymentAPI: (payment: any, id?: number) => savePaymentMutation.mutateAsync({ payment, id }),
+    addPaymentMutation: savePaymentMutation,
+    deletePaymentMutationAPI: deletePaymentMutation,
+    saveClientPaymentAPI: (payment: Partial<ClientPayment>, id?: number) => savePaymentMutation.mutateAsync({ payment, id }),
     deleteClientPaymentAPI: (id: number) => deletePaymentMutation.mutateAsync(id),
   };
 }

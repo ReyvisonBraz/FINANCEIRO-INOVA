@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api';
-import { Customer } from '../types';
+import { customerService } from '../services';
+import type { Customer } from '../types';
 import { useToast } from '../components/ui/Toast';
 import { useCustomerStore } from '../store/useCustomerStore';
 import { useFilterStore } from '../store/useFilterStore';
@@ -11,24 +11,19 @@ export const useCustomers = () => {
   const { customerSearchTerm, setCustomerSearchTerm } = useFilterStore();
   const { showToast } = useToast();
 
-  // Query para buscar clientes
   const { data: customersData, isLoading, isError, refetch } = useQuery({
     queryKey: ['customers', customersPage, customerSearchTerm],
     queryFn: async () => {
-      const { data } = await api.get(`/customers?page=${customersPage}&limit=20&search=${customerSearchTerm}`);
-      return data;
+      return await customerService.getAll({ page: customersPage, search: customerSearchTerm });
     },
   });
 
-  // Mutação para salvar/editar cliente
   const saveMutation = useMutation({
     mutationFn: async ({ customer, id }: { customer: Partial<Customer>; id?: number }) => {
       if (id) {
-        const { data } = await api.put(`/customers/${id}`, customer);
-        return data;
+        return await customerService.update(id, customer);
       } else {
-        const { data } = await api.post('/customers', customer);
-        return data;
+        return await customerService.create(customer);
       }
     },
     onSuccess: () => {
@@ -41,10 +36,9 @@ export const useCustomers = () => {
     },
   });
 
-  // Mutação para excluir cliente
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/customers/${id}`);
+      return await customerService.delete(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
@@ -56,10 +50,8 @@ export const useCustomers = () => {
     },
   });
 
-  // Função para verificar pagamentos (pode ser uma query também, mas mantendo como função por enquanto)
   const checkCustomerPaymentsAPI = async (id: number) => {
-    const { data } = await api.get(`/customers/${id}/payments`);
-    return data;
+    return await customerService.getPayments(id);
   };
 
   return { 

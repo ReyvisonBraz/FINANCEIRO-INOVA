@@ -15,6 +15,7 @@ import { MobileNav } from './components/layout/MobileNav';
 import { GlobalModals } from './components/layout/GlobalModals';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { PageLoader } from './components/ui/PageLoader';
+import { printBlankForm } from './lib/printUtils';
 
 // Lazy loaded pages
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
@@ -94,7 +95,7 @@ export default function App() {
     settings,
     fetchSettings,
     fetchCategories,
-  } = useSettings(showToast);
+  } = useSettings();
 
   const {
     isAuthenticated,
@@ -102,7 +103,7 @@ export default function App() {
     login,
     logout,
     hasPermission,
-  } = useAuth(showToast);
+  } = useAuth();
 
   useEffect(() => {
     document.documentElement.style.fontSize = `${fontSize}px`;

@@ -52,8 +52,8 @@ interface ModalState {
   setCustomerPaymentsWarning: (warnings: any[]) => void;
 
   // Client Payment Modals
-  clientPaymentToDelete: number | null;
-  setClientPaymentToDelete: (id: number | null) => void;
+  clientPaymentToDelete: ClientPayment | null;
+  setClientPaymentToDelete: (payment: ClientPayment | null) => void;
   isRecordingPayment: ClientPayment | null;
   setIsRecordingPayment: (payment: ClientPayment | null) => void;
   paymentAmount: string;

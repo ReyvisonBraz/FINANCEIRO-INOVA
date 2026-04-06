@@ -8,7 +8,7 @@ export const customerSchema = z.object({
   companyName: z.string().optional(),
   phone: z.string().min(10, 'Telefone inválido'),
   observation: z.string().optional(),
-  creditLimit: z.string().transform((val) => Number(val.replace(',', '.')) || 0).optional(),
+  creditLimit: z.number().optional().default(0),
 });
 
 export type CustomerFormData = z.infer<typeof customerSchema>;

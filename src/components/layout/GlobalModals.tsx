@@ -69,7 +69,7 @@ export const GlobalModals: React.FC = () => {
 
   // Hooks for API calls
   const { customers, saveCustomerAPI, deleteCustomerAPI, checkCustomerPaymentsAPI } = useCustomers();
-  const { saveTransactionAPI, deleteTransactionAPI } = useTransactions(showToast);
+  const { saveTransactionAPI, deleteTransactionAPI } = useTransactions();
   const { clientPayments, deleteClientPaymentAPI } = useClientPayments();
   const { serviceOrders } = useServiceOrders();
   const { fetchAuditLogs } = useAuditLogs();
@@ -98,7 +98,8 @@ export const GlobalModals: React.FC = () => {
       setIsAddingCustomer(false);
       setShowCustomerWarningModal(false);
       setEditingCustomer(null);
-      setLastAddedCustomerId(data.id);
+      const customerId = 'id' in data ? data.id : lastAddedCustomerId;
+      setLastAddedCustomerId(customerId);
       setShowCustomerSuccessModal(true);
       fetchAuditLogs();
     } catch (err) {
@@ -118,7 +119,7 @@ export const GlobalModals: React.FC = () => {
   };
 
   const handleUnlockSettings = () => {
-    if (passwordInput === settings.adminPassword) {
+    if (passwordInput === settings.settingsPassword) {
       setShowPasswordModal(false);
       setPasswordInput('');
       navigate('/configuracoes');
@@ -128,12 +129,11 @@ export const GlobalModals: React.FC = () => {
   };
 
   const handleAddTransaction = async (formData: any, force: boolean = false) => {
-    // Validação de avisos
     if (!force && settings.showWarnings) {
-      const hasSimilar = false; // Implementar lógica se necessário
+      const hasSimilar = false;
       if (hasSimilar) {
         setNewTx(formData);
-        setWarningType('duplicate');
+        setWarningType('both');
         setShowWarningModal(true);
         return;
       }
@@ -238,7 +238,7 @@ export const GlobalModals: React.FC = () => {
           setEditingTransaction(null);
         }}
         editingTransaction={editingTransaction}
-        categories={settings.categories}
+        categories={typeof settings.categories === 'string' ? settings.categories.split(',').map((name: string) => ({ name, type: 'expense' })) : settings.categories || []}
         onSubmit={(data) => handleAddTransaction(data)}
       />
 

@@ -8,7 +8,10 @@ import { z } from "zod";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const db = new Database("finance.db");
+const db = new Database("finance.db", { verbose: null });
+db.pragma('journal_mode = WAL');
+db.pragma('encoding = "UTF-8"');
+db.exec('PRAGMA encoding = "UTF-8"');
 
 // --- Zod Schemas for Validation ---
 const TransactionSchema = z.object({
@@ -466,12 +469,12 @@ async function startServer() {
     }
 
     let options: any = { 
-      orderBy: "t.date DESC, t.id DESC",
+      orderBy: "date DESC, id DESC",
       select: "t.*, c.firstName || ' ' || c.lastName as customerName, c.phone as customerPhone",
       join: "LEFT JOIN client_payments cp ON t.paymentId = cp.id LEFT JOIN customers c ON cp.customerId = c.id"
     };
     if (whereConditions.length > 0) {
-      options.where = whereConditions.map(c => c.startsWith('(') ? c : `t.${c}`).join(" AND ");
+      options.where = whereConditions.join(" AND ");
       options.params = params;
     }
     
@@ -887,19 +890,18 @@ async function startServer() {
     const user = db.prepare("SELECT * FROM users WHERE username = ? AND password = ?").get(username, password) as any;
     
     if (user) {
-      // Parse permissions
       try {
         user.permissions = JSON.parse(user.permissions || '[]');
       } catch (e) {
         user.permissions = [];
       }
       
-      // Se for owner, garante todas as permissões
       if (user.role === 'owner') {
         user.permissions = ['view_dashboard', 'manage_transactions', 'view_reports', 'manage_customers', 'manage_payments', 'manage_settings', 'manage_users'];
       }
 
-      res.json(user);
+      const { password: _, ...safeUser } = user;
+      res.json(safeUser);
     } else {
       res.status(401).json({ error: "Credenciais inválidas" });
     }
@@ -990,7 +992,7 @@ async function startServer() {
   // Rotas de Inventário
   app.get("/api/inventory", (req, res) => {
     const items = db.prepare("SELECT * FROM inventory_items ORDER BY name ASC").all();
-    res.json(items);
+    res.json({ data: items, meta: { total: items.length, page: 1, limit: items.length, totalPages: 1 } });
   });
 
   app.post("/api/inventory", (req, res) => {
@@ -1133,6 +1135,31 @@ async function startServer() {
     });
     
     res.json(result);
+  });
+
+  app.get("/api/service-orders/:id", (req, res) => {
+    const order = db.prepare(`
+      SELECT so.*, c.firstName, c.lastName, c.phone 
+      FROM service_orders so 
+      LEFT JOIN customers c ON so.customerId = c.id 
+      WHERE so.id = ?
+    `).get(req.params.id);
+    
+    if (!order) return res.status(404).json({ error: "Service order not found" });
+    
+    if (order.services) {
+      try { order.services = JSON.parse(order.services); } catch { order.services = []; }
+    } else { order.services = []; }
+    
+    if (order.partsUsed) {
+      try { order.partsUsed = JSON.parse(order.partsUsed); } catch { order.partsUsed = []; }
+    } else { order.partsUsed = []; }
+    
+    if (order.paymentHistory) {
+      try { order.paymentHistory = JSON.parse(order.paymentHistory); } catch { order.paymentHistory = []; }
+    } else { order.paymentHistory = []; }
+    
+    res.json(order);
   });
 
   app.post("/api/service-orders", (req, res) => {

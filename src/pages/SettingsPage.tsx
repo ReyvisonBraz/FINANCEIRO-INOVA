@@ -13,7 +13,7 @@ export const SettingsPage: React.FC = () => {
     addCategory, 
     deleteCategory,
     categories
-  } = useSettings(showToast);
+  } = useSettings();
   
   const { useUsersQuery, addUserMutation, updateUserMutation, deleteUserMutation } = useUsers();
   const { useAuditLogsQuery } = useAuditLogs();
@@ -28,11 +28,11 @@ export const SettingsPage: React.FC = () => {
       categories={categories}
       onAddCategory={(name, type) => addCategory({ name, type })}
       onDeleteCategory={deleteCategory}
-      users={usersQuery.data || []}
-      onAddUser={(user) => addUserMutation.mutate(user)}
-      onUpdateUser={(id, user) => updateUserMutation.mutate({ id, user })}
-      onDeleteUser={(id) => deleteUserMutation.mutate(id)}
-      auditLogs={auditLogsQuery.data || []}
+      users={(usersQuery as any).data || []}
+      onAddUser={(user: any) => addUserMutation.mutate(user)}
+      onUpdateUser={(id: number, user: any) => updateUserMutation.mutate({ id, user })}
+      onDeleteUser={(id: number) => deleteUserMutation.mutate(id)}
+      auditLogs={(auditLogsQuery as any).data || []}
     />
   );
 };

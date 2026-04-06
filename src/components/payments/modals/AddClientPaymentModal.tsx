@@ -32,7 +32,7 @@ export const AddClientPaymentModal: React.FC<AddClientPaymentModalProps> = ({
     watch,
     reset,
     formState: { errors }
-  } = useForm<ClientPaymentFormData>({
+  } = useForm({
     resolver: zodResolver(clientPaymentSchema),
     defaultValues: {
       customerId: 0,
@@ -66,7 +66,7 @@ export const AddClientPaymentModal: React.FC<AddClientPaymentModalProps> = ({
   }, [isOpen, initialData, reset]);
 
   const customerId = watch('customerId');
-  const installmentsCount = watch('installmentsCount');
+  const installmentsCount = watch('installmentsCount') as number;
 
   const onFormSubmit = (data: ClientPaymentFormData) => {
     onAdd(data);

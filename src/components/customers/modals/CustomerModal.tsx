@@ -68,7 +68,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
     setValue,
     watch,
     formState: { errors, isSubmitting }
-  } = useForm<CustomerFormData>({
+  } = useForm({
     resolver: zodResolver(customerSchema),
     defaultValues: {
       firstName: '',
@@ -78,7 +78,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
       companyName: '',
       phone: '+55',
       observation: '',
-      creditLimit: undefined
+      creditLimit: 0
     }
   });
 
@@ -96,7 +96,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
           companyName: editingCustomer.companyName || '',
           phone: editingCustomer.phone,
           observation: editingCustomer.observation || '',
-          creditLimit: editingCustomer.creditLimit?.toString()
+          creditLimit: editingCustomer.creditLimit || 0
         });
       } else {
         reset({
@@ -107,7 +107,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
           companyName: '',
           phone: '+55',
           observation: '',
-          creditLimit: undefined
+          creditLimit: 0
         });
       }
     }

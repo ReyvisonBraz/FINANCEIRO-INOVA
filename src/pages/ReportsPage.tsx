@@ -9,7 +9,7 @@ export const ReportsPage: React.FC = () => {
   const { showToast } = useToast();
   const { stats, handleChartClick, fetchStats } = useStats();
   const { categories } = useSettingsStore();
-  const { transactions } = useTransactions(showToast);
+  const { transactions } = useTransactions();
 
   React.useEffect(() => {
     fetchStats();

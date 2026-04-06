@@ -45,7 +45,7 @@ export const TransactionsPage: React.FC = () => {
     deleteTransactionAPI,
     isLoading,
     isError
-  } = useTransactions(showToast);
+  } = useTransactions();
 
   return (
     <Transactions 

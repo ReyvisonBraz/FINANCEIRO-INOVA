@@ -62,7 +62,7 @@ export const ServiceOrdersPage: React.FC = () => {
     addModelAPI
   } = useServiceOrders();
   const { customers } = useCustomers();
-  const { inventoryItems } = useInventory(showToast);
+  const { inventoryItems } = useInventory();
   const { clientPayments, saveClientPaymentAPI } = useClientPayments();
   const [isSavingPayment, setIsSavingPayment] = useState(false);
 
@@ -199,7 +199,7 @@ export const ServiceOrdersPage: React.FC = () => {
           setOsSortBy('newest'); // Reset sort to newest
           setServiceOrdersPage(1);
           showToast("Ordem de Serviço salva com sucesso!", "success");
-          return saved.id;
+          return 'id' in saved ? saved.id : null;
         } catch (err: any) {
           showToast(err.message || "Erro ao salvar Ordem de Serviço", "error");
           return null;
@@ -225,13 +225,13 @@ export const ServiceOrdersPage: React.FC = () => {
         await deleteServiceOrderStatusAPI(id);
       }}
       onAddEquipmentType={async (name, icon) => {
-        await addEquipmentTypeAPI(name, icon);
+        await addEquipmentTypeAPI(name);
       }}
       onAddBrand={async (name, equipmentType) => {
-        await addBrandAPI(name, equipmentType);
+        await addBrandAPI(name);
       }}
       onAddModel={async (brandId, name) => {
-        await addModelAPI(brandId, name);
+        await addModelAPI({ brandId, name });
       }}
       onPrintBlankForm={() => {
         printBlankForm(settings);
@@ -281,8 +281,6 @@ export const ServiceOrdersPage: React.FC = () => {
       isOpen={isAddingClientPayment}
       onClose={() => setIsAddingClientPayment(false)}
       customers={customers.data}
-      newClientPayment={newClientPayment}
-      setNewClientPayment={setNewClientPayment}
       onAdd={handleAddClientPayment}
       isSaving={isSavingPayment}
     />

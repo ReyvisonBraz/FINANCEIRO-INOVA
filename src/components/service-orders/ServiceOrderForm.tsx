@@ -74,7 +74,7 @@ export const ServiceOrderForm: React.FC<ServiceOrderFormProps> = ({
     watch,
     reset,
     formState: { errors }
-  } = useForm<ServiceOrderFormData>({
+  } = useForm({
     resolver: zodResolver(serviceOrderSchema),
     defaultValues: {
       customerId: 0,
