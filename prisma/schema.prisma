@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Usuários & Autenticação ────────────────────────────────────────────────
+
+model User {
+  id          Int        @id @default(autoincrement())
+  username    String     @unique
+  password    String
+  role        String     @default("employee") // owner | manager | employee
+  name        String
+  permissions String?    @default("[]") // JSON array de permissões extra
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  AuditLogs   AuditLog[]
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  action    String   // CREATE | UPDATE | DELETE | LOGIN
+  entity    String   // Transaction | Customer | ServiceOrder | etc.
+  entityId  Int?
+  details   String?  // JSON com dados relevantes
+  timestamp DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+// ─── Financeiro ──────────────────────────────────────────────────────────────
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  description String
+  category    String
+  type        String   // income | expense
+  amount      Float
+  date        String   // ISO date YYYY-MM-DD
+  status      String   @default("Concluído")
+  paymentMethod String? // Dinheiro | Cartão | PIX | etc.
+  createdBy   Int?
+  updatedBy   Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Category {
+  id   Int    @id @default(autoincrement())
+  name String
+  type String // income | expense
+}
+
+// ─── Configurações ───────────────────────────────────────────────────────────
+
+model Settings {
+  id                      Int     @id @default(1)
+  appName                 String? @default("Financeiro Inova")
+  appVersion              String? @default("Versão Empresarial")
+  fiscalYear              String? @default("2025")
+  primaryColor            String? @default("#1152d4")
+  categories              String? @default("Alimentação,Trabalho,Utilidades,Viagem,Lazer,Outros")
+  incomeCategories        String? @default("Salário,Vendas,Serviços,Investimentos,Outros")
+  expenseCategories       String? @default("Alimentação,Trabalho,Utilidades,Viagem,Lazer,Outros")
+  profileName             String? @default("Inova Informática")
+  profileAvatar           String?
+  initialBalance          Float?  @default(0)
+  showWarnings            Int?    @default(1)
+  hiddenColumns           String? @default("[]")
+  settingsPassword        String? @default("1234")
+  receiptLayout           String? @default("a4") // simple | a4
+  receiptLogo             String?
+  companyCnpj             String?
+  companyAddress          String?
+  pixKey                  String?
+  pixQrCode               String?
+  whatsappBillingTemplate String?
+  whatsappOSTemplate      String?
+  sendPulseClientId       String?
+  sendPulseClientSecret   String?
+  sendPulseTemplateId     String?
+}
+
+// ─── Clientes / CRM ──────────────────────────────────────────────────────────
+
+model Customer {
+  id             Int             @id @default(autoincrement())
+  firstName      String
+  lastName       String
+  nickname       String?
+  cpf            String?
+  companyName    String?
+  phone          String
+  observation    String?
+  creditLimit    Float?          @default(0)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  createdBy      Int?
+  updatedBy      Int?
+  ClientPayments ClientPayment[]
+  ServiceOrders  ServiceOrder[]
+}
+
+// ─── Contas a Receber / Vendas ────────────────────────────────────────────────
+
+model ClientPayment {
+  id                Int      @id @default(autoincrement())
+  customerId        Int
+  description       String
+  totalAmount       Float
+  paidAmount        Float?   @default(0)
+  purchaseDate      String   // ISO date YYYY-MM-DD
+  dueDate           String   // ISO date YYYY-MM-DD
+  paymentMethod     String
+  status            String?  @default("pending") // pending | partial | paid
+  installmentsCount Int?     @default(1)
+  type              String?  @default("income") // income | expense
+  paymentHistory    String?  @default("[]") // JSON array de pagamentos
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         Int?
+  updatedBy         Int?
+  customer          Customer  @relation(fields: [customerId], references: [id])
+  Receipts          Receipt[]
+}
+
+model Receipt {
+  id        Int           @id @default(autoincrement())
+  paymentId Int
+  content   String        // HTML ou texto do recibo
+  createdAt DateTime      @default(now())
+  payment   ClientPayment @relation(fields: [paymentId], references: [id])
+}
+
+// ─── Ordens de Serviço ────────────────────────────────────────────────────────
+
+model ServiceOrder {
+  id                 Int      @id @default(autoincrement())
+  customerId         Int
+  equipmentType      String?
+  equipmentBrand     String?
+  equipmentModel     String?
+  equipmentColor     String?
+  equipmentSerial    String?
+  reportedProblem    String?
+  arrivalPhotoUrl    String?
+  arrivalPhotoBase64 String?  // Base64 (migrar para Supabase Storage futuramente)
+  status             String?  @default("awaiting_diagnosis")
+  technicalAnalysis  String?
+  servicesPerformed  String?
+  partsUsed          String?  @default("[]") // JSON array de peças
+  serviceFee         Float?   @default(0)
+  totalAmount        Float?   @default(0)
+  finalObservations  String?
+  entryDate          String?  // ISO date
+  analysisPrediction String?  // ISO date
+  customerPassword   String?
+  accessories        String?
+  ramInfo            String?
+  ssdInfo            String?
+  priority           String?  @default("medium") // low | medium | high | urgent
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  createdBy          Int?
+  updatedBy          Int?
+  customer           Customer @relation(fields: [customerId], references: [id])
+}
+
+model ServiceOrderStatus {
+  id        Int     @id @default(autoincrement())
+  name      String
+  color     String
+  priority  Int?    @default(0)
+  isDefault Int?    @default(0)
+}
+
+// ─── Estoque ──────────────────────────────────────────────────────────────────
+
+model InventoryItem {
+  id          Int      @id @default(autoincrement())
+  name        String
+  category    String   // product | service
+  sku         String?
+  unitPrice   Float
+  costPrice   Float?   @default(0)
+  salePrice   Float?   @default(0)
+  quantity    Int?     @default(0)
+  minQuantity Int?     @default(5)
+  stockLevel  Int?     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   Int?
+  updatedBy   Int?
+}
+
+// ─── Catálogo de Equipamentos ─────────────────────────────────────────────────
+
+model Brand {
+  id            Int     @id @default(autoincrement())
+  name          String  @unique
+  equipmentType String?
+  Models        Model[]
+}
+
+model Model {
+  id      Int    @id @default(autoincrement())
+  brandId Int
+  name    String
+  brand   Brand  @relation(fields: [brandId], references: [id])
+
+  @@unique([brandId, name])
+}
+
+model EquipmentType {
+  id   Int     @id @default(autoincrement())
+  name String  @unique
+  icon String?
+}
