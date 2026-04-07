@@ -7,10 +7,10 @@ import { errorHandler } from "./shared/middleware/error.js";
 // Módulos — Fase 1
 import authRoutes from "./modules/auth/auth.routes.js";
 
-// Módulos — Fase 2 (descomentar conforme implementação)
-// import transactionRoutes from "./modules/transactions/transactions.routes.js";
-// import settingsRoutes from "./modules/settings/settings.routes.js";
-// import auditRoutes from "./modules/audit/audit.routes.js";
+// Módulos — Fase 2
+import transactionRoutes from "./modules/transactions/transactions.routes.js";
+import settingsRoutes from "./modules/settings/settings.routes.js";
+import auditRoutes from "./modules/audit/audit.routes.js";
 
 // Módulos — Fase 3
 // import customerRoutes from "./modules/customers/customers.routes.js";
@@ -45,9 +45,9 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 
 // Fase 2
-// app.use("/api/transactions", transactionRoutes);
-// app.use("/api/settings", settingsRoutes);
-// app.use("/api/audit", auditRoutes);
+app.use("/api/transactions", transactionRoutes);
+app.use("/api/settings", settingsRoutes);
+app.use("/api/audit", auditRoutes);
 
 // Fase 3
 // app.use("/api/customers", customerRoutes);
