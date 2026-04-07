@@ -13,16 +13,16 @@ import settingsRoutes from "./modules/settings/settings.routes.js";
 import auditRoutes from "./modules/audit/audit.routes.js";
 
 // Módulos — Fase 3
-// import customerRoutes from "./modules/customers/customers.routes.js";
-// import paymentRoutes from "./modules/payments/payments.routes.js";
+import customerRoutes from "./modules/customers/customers.routes.js";
+import paymentRoutes from "./modules/payments/payments.routes.js";
 
 // Módulos — Fase 4
-// import serviceOrderRoutes from "./modules/service-orders/service-orders.routes.js";
-// import inventoryRoutes from "./modules/inventory/inventory.routes.js";
+import serviceOrderRoutes from "./modules/service-orders/service-orders.routes.js";
+import inventoryRoutes from "./modules/inventory/inventory.routes.js";
 
 // Módulos — Fase 5
-// import userRoutes from "./modules/users/users.routes.js";
-// import catalogRoutes from "./modules/catalog/catalog.routes.js";
+import userRoutes from "./modules/users/users.routes.js";
+import catalogRoutes from "./modules/catalog/catalog.routes.js";
 
 const app = express();
 
@@ -50,16 +50,16 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/audit", auditRoutes);
 
 // Fase 3
-// app.use("/api/customers", customerRoutes);
-// app.use("/api/payments", paymentRoutes);
+app.use("/api/customers", customerRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // Fase 4
-// app.use("/api/service-orders", serviceOrderRoutes);
-// app.use("/api/inventory", inventoryRoutes);
+app.use("/api/service-orders", serviceOrderRoutes);
+app.use("/api/inventory", inventoryRoutes);
 
 // Fase 5
-// app.use("/api/users", userRoutes);
-// app.use("/api/catalog", catalogRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/catalog", catalogRoutes);
 
 // ─── Handler de erros (sempre por último) ────────────────────────────────────
 app.use(errorHandler);
