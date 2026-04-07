@@ -24,8 +24,7 @@ export const CustomersPage: React.FC = () => {
     customersPage,
     setCustomersPage,
     deleteCustomerAPI,
-    isLoading,
-    isError
+    fetchCustomers 
   } = useCustomers();
 
   // Update global search term when debounced local term changes
@@ -34,7 +33,11 @@ export const CustomersPage: React.FC = () => {
     setCustomersPage(1); // Reset to first page on search
   }, [debouncedSearchTerm, setCustomerSearchTerm, setCustomersPage]);
 
-  const { clientPayments } = useClientPayments();
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
+
+  const { clientPayments } = useClientPayments(showToast);
   const { 
     setHistoryCustomer, 
     setShowHistoryModal,
@@ -57,7 +60,6 @@ export const CustomersPage: React.FC = () => {
       onSearchChange={setLocalSearchTerm}
       customers={customers}
       clientPayments={clientPayments}
-      isLoading={isLoading}
       onDelete={(id) => {
         const customer = customers.data.find(c => c.id === id);
         if (customer) setCustomerToDelete(customer);

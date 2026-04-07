@@ -1,40 +1,39 @@
-# Próximos Passos (Plano de Consolidação e Solidez)
+# Próximos Passos (Plano de Ação Imediato)
 
-Após as refatorações iniciais, o foco agora é tornar a base de código "production-ready", utilizando padrões de mercado e bibliotecas validadas.
+Após a refatoração bem-sucedida da estrutura de componentes e a centralização dos modais globais, o projeto está pronto para as seguintes melhorias de qualidade e performance:
 
-## 1. Padronização da Camada de Dados (Alta Prioridade)
-*   **Objetivo:** Eliminar `useEffect` para fetching e gerenciar cache/estados de erro de forma robusta.
-*   **Ação:** Instalar e configurar **TanStack Query (React Query)**. Criar um cliente de API centralizado em `src/lib/api.ts`.
-*   **Benefício:** Cache automático, refetching inteligente, estados de loading/error padronizados e código mais declarativo.
+## 1. Implementação de Error Boundaries (Curto Prazo)
+*   **Objetivo:** Evitar que falhas em componentes específicos derrubem a aplicação inteira.
+*   **Ação:** Criar um componente `<ErrorBoundary />` genérico em `src/components/ui/` e envolvê-lo em torno das rotas principais no `App.tsx`.
+*   **Benefício:** Melhora a resiliência e a experiência do usuário em caso de erros inesperados.
 
-## 2. Robustez em Formulários e Validação (Alta Prioridade)
-*   **Objetivo:** Substituir o gerenciamento manual de estado de formulários por uma solução performática e tipada.
-*   **Ação:** Implementar **React Hook Form** integrado com **Zod** para validação de esquemas.
-*   **Benefício:** Validação complexa simplificada, melhor performance (menos re-renders) e total segurança de tipos do formulário ao backend.
+## 2. Migração para Roteamento Real e Code Splitting (Curto Prazo)
+*   **Objetivo:** Melhorar o tempo de carregamento inicial e a SEO (se aplicável).
+*   **Ação:** Substituir o controle de tela baseado em estado (`activeScreen`) por rotas reais do `react-router-dom`. Usar `React.lazy()` e `<Suspense>` para carregar as páginas (`DashboardPage`, `CustomersPage`, etc.) sob demanda.
+*   **Benefício:** Bundle inicial menor e navegação mais fluida.
 
-## 3. Padronização de UI com shadcn/ui (Médio Prazo)
-*   **Objetivo:** Usar componentes de UI acessíveis e testados em vez de implementações customizadas ad-hoc.
-*   **Ação:** Inicializar o **shadcn/ui** e começar a substituir componentes como `Button`, `Input`, `Select` e `Dialog`.
-*   **Benefício:** Consistência visual, acessibilidade (A11y) nativa e facilidade de manutenção.
+## 3. Adoção do TanStack Query (Médio Prazo)
+*   **Objetivo:** Simplificar o gerenciamento de estado do servidor e implementar cache automático.
+*   **Ação:** Migrar as chamadas de API dos hooks customizados (`useCustomers`, `useTransactions`) para o React Query.
+*   **Benefício:** Sincronização automática de dados, redução de requisições redundantes e melhor feedback visual de carregamento.
 
-## 4. Centralização de Serviços e Hooks (Contínuo)
-*   **Objetivo:** Evitar duplicação de lógica de negócio.
-*   **Ação:** Mover lógicas complexas de dentro dos componentes para hooks especializados ou arquivos de serviço (ex: `src/services/`).
-*   **Benefício:** Código mais limpo, testável e reutilizável.
+## 4. Refinamento do RBAC (Médio Prazo)
+*   **Objetivo:** Garantir que usuários com diferentes níveis de acesso vejam apenas o que lhes é permitido.
+*   **Ação:** Criar um componente `<ProtectedRoute />` ou `<Can />` para envolver rotas e botões sensíveis, baseando-se no papel do usuário (`role`) vindo do `useAuth`.
+*   **Benefício:** Segurança robusta e interface personalizada por perfil.
 
-## 5. Testes Automatizados (Longo Prazo)
-*   **Objetivo:** Garantir que novas funcionalidades não quebrem o que já funciona.
-*   **Ação:** Configurar Vitest para testes unitários de hooks e serviços.
-*   **Benefício:** Segurança em refatorações e redução de bugs em produção.
+## 5. Testes Unitários Críticos (Médio Prazo)
+*   **Objetivo:** Garantir que lógicas de cálculo e exportação não quebrem em futuras mudanças.
+*   **Ação:** Implementar testes para os hooks `useDashboardStats` e `useExportData`.
+*   **Benefício:** Confiança total em refatorações futuras.
 
 ---
 
 **Status Atual:**
 *   [x] Refatoração de Componentes (Concluído)
 *   [x] Centralização de Modais Globais (Concluído)
-*   [x] Error Boundaries e Lazy Loading (Concluído)
+*   [x] Limpeza de App.tsx (Concluído)
+*   [x] Error Boundaries (Concluído)
+*   [x] Lazy Loading (Concluído)
 *   [x] Debounce para Buscas (Concluído)
 *   [x] Centralização de Recibos (Concluído)
-*   [ ] Configuração do TanStack Query (Pendente)
-*   [ ] Migração de Formulários para React Hook Form + Zod (Pendente)
-*   [ ] Inicialização do shadcn/ui (Pendente)

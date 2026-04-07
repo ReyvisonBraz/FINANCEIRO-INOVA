@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Briefcase, CreditCard, Users, Package } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Screen } from '../../types';
-import { useAppStore } from '../../store/useAppStore';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '../../store/useAuthStore';
 
-export function MobileNav() {
-  const { activeScreen, setActiveScreen } = useAppStore();
-  const { hasPermission } = useAuth();
+interface MobileNavProps {
+  activeScreen: Screen;
+  setActiveScreen: (screen: Screen) => void;
+}
+
+export function MobileNav({ activeScreen, setActiveScreen }: MobileNavProps) {
+  const { hasPermission } = useAuthStore();
   const navigate = useNavigate();
 
   const handleNavigation = (screen: Screen, path: string) => {
@@ -29,7 +32,7 @@ export function MobileNav() {
         <span className="text-xs font-black uppercase tracking-widest">Início</span>
       </button>
       
-      {hasPermission('manage_service_orders') && (
+      {hasPermission('service-orders') && (
         <button 
           onClick={() => handleNavigation('service-orders', '/ordens')}
           className={cn(
@@ -42,7 +45,7 @@ export function MobileNav() {
         </button>
       )}
 
-      {hasPermission('manage_payments') && (
+      {hasPermission('client-payments') && (
         <button 
           onClick={() => handleNavigation('client-payments', '/vendas')}
           className={cn(
@@ -55,7 +58,7 @@ export function MobileNav() {
         </button>
       )}
 
-      {hasPermission('manage_customers') && (
+      {hasPermission('customers') && (
         <button 
           onClick={() => handleNavigation('customers', '/clientes')}
           className={cn(
@@ -68,7 +71,7 @@ export function MobileNav() {
         </button>
       )}
 
-      {hasPermission('manage_inventory') && (
+      {hasPermission('inventory') && (
         <button 
           onClick={() => handleNavigation('inventory', '/estoque')}
           className={cn(

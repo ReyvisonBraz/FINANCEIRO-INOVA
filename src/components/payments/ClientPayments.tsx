@@ -15,9 +15,9 @@ interface ClientPaymentsProps {
   sendWhatsAppReminder: (payment: ClientPayment) => void;
   handleDeleteClientPayment: (payment: ClientPayment) => void;
   handleDeleteClientPaymentGroup: (saleId: string) => void;
-  handleRecordPayment: (data: any) => void;
+  handleRecordPayment: () => void;
   customers: Customer[];
-  handleAddClientPayment: (data: any) => void;
+  handleAddClientPayment: () => void;
   isSaving?: boolean;
   pagination: {
     currentPage: number;
@@ -38,6 +38,12 @@ interface ClientPaymentsProps {
   setPaymentSortMode: (value: string) => void;
   isRecordingPayment: ClientPayment | null;
   setIsRecordingPayment: (payment: ClientPayment | null) => void;
+  paymentAmount: string;
+  setPaymentAmount: (value: string) => void;
+  paymentDate: string;
+  setPaymentDate: (value: string) => void;
+  newClientPayment: any;
+  setNewClientPayment: (payment: any) => void;
   onTriggerAddCustomer?: () => void;
 }
 
@@ -65,6 +71,12 @@ export const ClientPayments = ({
   setPaymentSortMode,
   isRecordingPayment,
   setIsRecordingPayment,
+  paymentAmount,
+  setPaymentAmount,
+  paymentDate,
+  setPaymentDate,
+  newClientPayment,
+  setNewClientPayment,
   onTriggerAddCustomer
 }: ClientPaymentsProps) => {
 
@@ -692,6 +704,8 @@ export const ClientPayments = ({
         isOpen={isAddingClientPayment}
         onClose={() => setIsAddingClientPayment(false)}
         customers={customers}
+        newClientPayment={newClientPayment}
+        setNewClientPayment={setNewClientPayment}
         onAdd={handleAddClientPayment}
         onTriggerAddCustomer={onTriggerAddCustomer}
         isSaving={isSaving}
@@ -702,6 +716,10 @@ export const ClientPayments = ({
         payment={isRecordingPayment}
         onClose={() => setIsRecordingPayment(null)}
         onConfirm={handleRecordPayment}
+        amount={paymentAmount}
+        setAmount={setPaymentAmount}
+        date={paymentDate}
+        setDate={setPaymentDate}
         formatCurrency={formatCurrency}
       />
     </div>

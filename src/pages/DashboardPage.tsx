@@ -5,9 +5,13 @@ import { useSettingsStore } from '../store/useSettingsStore';
 import { useFilterStore } from '../store/useFilterStore';
 
 export const DashboardPage: React.FC = () => {
-  const { dashboardMonth } = useFilterStore();
-  const { stats, handleChartClick } = useStats(dashboardMonth);
+  const { stats, handleChartClick, fetchStats } = useStats();
   const { settings } = useSettingsStore();
+  const { dashboardMonth, handlePrevMonth, handleNextMonth } = useFilterStore();
+
+  React.useEffect(() => {
+    fetchStats();
+  }, [fetchStats, dashboardMonth]);
 
   return (
     <Dashboard 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useModalStore } from '../../store/useModalStore';
 import { useAppStore } from '../../store/useAppStore';
@@ -6,14 +7,6 @@ import { useFormStore } from '../../store/useFormStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useToast } from '../ui/Toast';
 import { formatCurrency } from '../../lib/utils';
-
-// Hooks
-import { useCustomers } from '../../hooks/useCustomers';
-import { useTransactions } from '../../hooks/useTransactions';
-import { useClientPayments } from '../../hooks/useClientPayments';
-import { useServiceOrders } from '../../hooks/useServiceOrders';
-import { useAuditLogs } from '../../hooks/useAuditLogs';
-import { useAuth } from '../../hooks/useAuth';
 
 // Modals
 import { CustomerModal } from '../customers/modals/CustomerModal';
@@ -28,13 +21,36 @@ import { CustomerHistoryModal } from '../customers/modals/CustomerHistoryModal';
 import { ConfirmModal } from '../ui/modals/ConfirmModal';
 import { DirectOsSearchModal } from '../service-orders/modals/DirectOsSearchModal';
 
-export const GlobalModals: React.FC = () => {
+interface GlobalModalsProps {
+  // Handlers that need logic from App.tsx or specific hooks
+  handleAddCustomer: (force?: boolean) => Promise<void>;
+  confirmDeleteCustomerWithPayments: () => Promise<void>;
+  handleUnlockSettings: () => void;
+  handleAddTransaction: (e?: React.FormEvent, force?: boolean) => Promise<void>;
+  handleDeleteTransaction: (tx: any) => Promise<void>;
+  confirmDeleteClientPayment: () => Promise<void>;
+  categories: any[];
+  clientPayments: any[];
+  serviceOrders: any[];
+}
+
+export const GlobalModals: React.FC<GlobalModalsProps> = ({
+  handleAddCustomer,
+  confirmDeleteCustomerWithPayments,
+  handleUnlockSettings,
+  handleAddTransaction,
+  handleDeleteTransaction,
+  confirmDeleteClientPayment,
+  categories,
+  clientPayments,
+  serviceOrders
+}) => {
   const navigate = useNavigate();
   const { settings, saveSettingsAPI: updateSettings } = useSettingsStore();
   const { showToast } = useToast();
-  const { currentUser } = useAuth();
   
   const {
+    activeScreen,
     isAdding, setIsAdding,
     isAddingCustomer, setIsAddingCustomer,
     customerRegistrationSource,
@@ -47,16 +63,16 @@ export const GlobalModals: React.FC = () => {
     showPasswordModal, setShowPasswordModal,
     passwordInput, setPasswordInput,
     showWarningModal, setShowWarningModal,
-    warningType, setWarningType,
+    warningType,
     showCustomerWarningModal, setShowCustomerWarningModal,
-    customerWarningType, setCustomerWarningType,
+    customerWarningType,
     showCustomerSuccessModal, setShowCustomerSuccessModal,
-    lastAddedCustomerId, setLastAddedCustomerId,
+    lastAddedCustomerId,
     editingTransaction, setEditingTransaction,
     transactionToDelete, setTransactionToDelete,
     editingCustomer, setEditingCustomer,
     customerToDelete, setCustomerToDelete,
-    customerPaymentsWarning, setCustomerPaymentsWarning,
+    customerPaymentsWarning,
     clientPaymentToDelete, setClientPaymentToDelete,
     showHistoryModal, setShowHistoryModal,
     historyCustomer
@@ -66,114 +82,6 @@ export const GlobalModals: React.FC = () => {
     newCustomer, setNewCustomer,
     newTx, setNewTx
   } = useFormStore();
-
-  // Hooks for API calls
-  const { customers, saveCustomerAPI, deleteCustomerAPI, checkCustomerPaymentsAPI } = useCustomers();
-  const { saveTransactionAPI, deleteTransactionAPI } = useTransactions(showToast);
-  const { clientPayments, deleteClientPaymentAPI } = useClientPayments();
-  const { serviceOrders } = useServiceOrders();
-  const { fetchAuditLogs } = useAuditLogs();
-
-  const handleAddCustomer = async (formData: any, force: boolean = false) => {
-    // Validação de avisos
-    if (!force && settings.showWarnings) {
-      const hasSimilarCpf = customers.data.some((c: any) => c.cpf === formData.cpf && c.cpf !== '');
-      const hasSimilarPhone = customers.data.some((c: any) => c.phone === formData.phone);
-
-      if (hasSimilarCpf || hasSimilarPhone) {
-        setNewCustomer(formData);
-        setCustomerWarningType(hasSimilarCpf && hasSimilarPhone ? 'both' : hasSimilarCpf ? 'cpf' : 'phone');
-        setShowCustomerWarningModal(true);
-        return;
-      }
-    }
-
-    try {
-      const data = await saveCustomerAPI({
-        ...formData,
-        createdBy: !editingCustomer ? currentUser?.id : undefined,
-        updatedBy: currentUser?.id
-      }, editingCustomer?.id);
-      
-      setIsAddingCustomer(false);
-      setShowCustomerWarningModal(false);
-      setEditingCustomer(null);
-      setLastAddedCustomerId(data.id);
-      setShowCustomerSuccessModal(true);
-      fetchAuditLogs();
-    } catch (err) {
-      console.error("Failed to save customer", err);
-    }
-  };
-
-  const confirmDeleteCustomerWithPayments = async () => {
-    if (!customerToDelete) return;
-    try {
-      await deleteCustomerAPI(customerToDelete.id);
-      setCustomerToDelete(null);
-      fetchAuditLogs();
-    } catch (err) {
-      console.error("Failed to delete customer", err);
-    }
-  };
-
-  const handleUnlockSettings = () => {
-    if (passwordInput === settings.adminPassword) {
-      setShowPasswordModal(false);
-      setPasswordInput('');
-      navigate('/configuracoes');
-    } else {
-      showToast('Senha incorreta!', 'error');
-    }
-  };
-
-  const handleAddTransaction = async (formData: any, force: boolean = false) => {
-    // Validação de avisos
-    if (!force && settings.showWarnings) {
-      const hasSimilar = false; // Implementar lógica se necessário
-      if (hasSimilar) {
-        setNewTx(formData);
-        setWarningType('duplicate');
-        setShowWarningModal(true);
-        return;
-      }
-    }
-
-    try {
-      await saveTransactionAPI({
-        ...formData,
-        createdBy: !editingTransaction ? currentUser?.id : undefined,
-        updatedBy: currentUser?.id
-      }, editingTransaction?.id);
-      
-      setIsAdding(false);
-      setShowWarningModal(false);
-      setEditingTransaction(null);
-      fetchAuditLogs();
-    } catch (err) {
-      console.error("Failed to save transaction", err);
-    }
-  };
-
-  const handleDeleteTransaction = async (tx: any) => {
-    try {
-      await deleteTransactionAPI(tx.id);
-      fetchAuditLogs();
-    } catch (err) {
-      console.error("Failed to delete transaction", err);
-    }
-  };
-
-  const confirmDeleteClientPayment = async () => {
-    if (!clientPaymentToDelete) return;
-    try {
-      await deleteClientPaymentAPI(clientPaymentToDelete.id);
-      setClientPaymentToDelete(null);
-      fetchAuditLogs();
-    } catch (err) {
-      console.error("Failed to delete client payment", err);
-    }
-  };
 
   return (
     <>
@@ -185,14 +93,16 @@ export const GlobalModals: React.FC = () => {
           setEditingCustomer(null);
         }}
         editingCustomer={editingCustomer}
-        onSave={(data) => handleAddCustomer(data)}
+        newCustomer={newCustomer}
+        setNewCustomer={setNewCustomer}
+        onSave={handleAddCustomer}
       />
 
       <CustomerWarningModal 
         isOpen={showCustomerWarningModal}
         onClose={() => setShowCustomerWarningModal(false)}
         type={customerWarningType}
-        onConfirm={() => handleAddCustomer(newCustomer, true)}
+        onConfirm={() => handleAddCustomer(true)}
       />
 
       <CustomerSuccessModal
@@ -226,7 +136,7 @@ export const GlobalModals: React.FC = () => {
         isOpen={showWarningModal}
         onClose={() => setShowWarningModal(false)}
         type={warningType}
-        onConfirm={() => handleAddTransaction(newTx, true)}
+        onConfirm={() => handleAddTransaction(undefined, true)}
         showWarnings={settings.showWarnings}
         setShowWarnings={(val: boolean) => updateSettings({ ...settings, showWarnings: val })}
       />
@@ -236,10 +146,19 @@ export const GlobalModals: React.FC = () => {
         onClose={() => {
           setIsAdding(false);
           setEditingTransaction(null);
+          setNewTx({
+            description: '',
+            category: '',
+            type: 'expense',
+            amount: '',
+            date: format(new Date(), 'yyyy-MM-dd')
+          });
         }}
         editingTransaction={editingTransaction}
-        categories={settings.categories}
-        onSubmit={(data) => handleAddTransaction(data)}
+        newTx={newTx}
+        setNewTx={setNewTx}
+        categories={categories}
+        onSubmit={handleAddTransaction}
       />
 
       <DeleteConfirmationModal 
@@ -265,8 +184,8 @@ export const GlobalModals: React.FC = () => {
         isOpen={showHistoryModal}
         onClose={() => setShowHistoryModal(false)}
         customer={historyCustomer}
-        clientPayments={clientPayments.data}
-        serviceOrders={serviceOrders.data}
+        clientPayments={clientPayments}
+        serviceOrders={serviceOrders}
       />
 
       <ConfirmModal
@@ -281,7 +200,7 @@ export const GlobalModals: React.FC = () => {
       <DirectOsSearchModal 
         show={isSearchingOS}
         onClose={() => setIsSearchingOS(false)}
-        orders={serviceOrders.data}
+        orders={serviceOrders}
         handleEdit={(order) => {
           setDirectOsId(order.id);
           setDirectMode('edit');

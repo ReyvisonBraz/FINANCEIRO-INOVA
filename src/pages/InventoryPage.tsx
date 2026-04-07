@@ -27,10 +27,22 @@ export const InventoryPage: React.FC = () => {
   const { 
     inventoryItems, 
     saveInventoryItemAPI, 
-    deleteInventoryItemAPI
+    deleteInventoryItemAPI,
+    fetchInventoryItems 
   } = useInventory(showToast);
 
+  useEffect(() => {
+    fetchInventoryItems();
+  }, [fetchInventoryItems]);
+
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [newItem, setNewItem] = useState({
+    name: '',
+    category: 'product' as 'product' | 'service',
+    sku: '',
+    unitPrice: '',
+    stockLevel: ''
+  });
 
   return (
     <Inventory 
@@ -47,6 +59,8 @@ export const InventoryPage: React.FC = () => {
       onOpenConfirm={openConfirm}
       editingItem={editingItem}
       setEditingItem={setEditingItem}
+      newItem={newItem}
+      setNewItem={setNewItem}
       showToast={showToast}
     />
   );

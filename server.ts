@@ -958,21 +958,8 @@ async function startServer() {
   });
 
   app.delete("/api/users/:id", (req, res) => {
-    try {
-      const userId = req.params.id;
-      
-      // Remove foreign key references to avoid constraint errors
-      db.prepare("UPDATE audit_logs SET userId = NULL WHERE userId = ?").run(userId);
-      db.prepare("UPDATE inventory_items SET createdBy = NULL WHERE createdBy = ?").run(userId);
-      db.prepare("UPDATE inventory_items SET updatedBy = NULL WHERE updatedBy = ?").run(userId);
-      db.prepare("UPDATE service_orders SET createdBy = NULL WHERE createdBy = ?").run(userId);
-      db.prepare("UPDATE service_orders SET updatedBy = NULL WHERE updatedBy = ?").run(userId);
-      
-      db.prepare("DELETE FROM users WHERE id = ?").run(userId);
-      res.json({ success: true });
-    } catch (e: any) {
-      res.status(400).json({ error: e.message });
-    }
+    db.prepare("DELETE FROM users WHERE id = ?").run(req.params.id);
+    res.json({ success: true });
   });
 
   // Rotas de Auditoria

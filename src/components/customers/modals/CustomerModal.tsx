@@ -1,9 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ChevronDown } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { customerSchema, CustomerFormData } from '../../../schemas/customerSchema';
 
 const COUNTRIES = [
   { code: '+55', name: 'Brasil', flag: '🇧🇷' },
@@ -52,71 +49,28 @@ interface CustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
   editingCustomer: any;
-  onSave: (data: CustomerFormData, force?: boolean) => void;
+  newCustomer: {
+    firstName: string;
+    lastName: string;
+    nickname: string;
+    cpf: string;
+    companyName: string;
+    phone: string;
+    observation: string;
+    creditLimit: string;
+  };
+  setNewCustomer: (customer: any) => void;
+  onSave: (force?: boolean) => void;
 }
 
 export const CustomerModal: React.FC<CustomerModalProps> = ({
   isOpen,
   onClose,
   editingCustomer,
+  newCustomer,
+  setNewCustomer,
   onSave
 }) => {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors, isSubmitting }
-  } = useForm<CustomerFormData>({
-    resolver: zodResolver(customerSchema),
-    defaultValues: {
-      firstName: '',
-      lastName: '',
-      nickname: '',
-      cpf: '',
-      companyName: '',
-      phone: '+55',
-      observation: '',
-      creditLimit: undefined
-    }
-  });
-
-  const phoneValue = watch('phone');
-  const { country, number } = parsePhone(phoneValue);
-
-  useEffect(() => {
-    if (isOpen) {
-      if (editingCustomer) {
-        reset({
-          firstName: editingCustomer.firstName,
-          lastName: editingCustomer.lastName || '',
-          nickname: editingCustomer.nickname || '',
-          cpf: editingCustomer.cpf || '',
-          companyName: editingCustomer.companyName || '',
-          phone: editingCustomer.phone,
-          observation: editingCustomer.observation || '',
-          creditLimit: editingCustomer.creditLimit?.toString()
-        });
-      } else {
-        reset({
-          firstName: '',
-          lastName: '',
-          nickname: '',
-          cpf: '',
-          companyName: '',
-          phone: '+55',
-          observation: '',
-          creditLimit: undefined
-        });
-      }
-    }
-  }, [isOpen, editingCustomer, reset]);
-
-  const onSubmit = (data: CustomerFormData) => {
-    onSave(data);
-  };
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -143,24 +97,25 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                 <X size={20} className="md:w-6 md:h-6" />
               </button>
             </div>
-            
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+            <div className="space-y-4 md:space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-primary flex justify-between">
                     <span>Nome *</span>
-                    {errors.firstName && <span className="text-[8px] text-red-500 italic">{errors.firstName.message}</span>}
+                    <span className="text-[8px] text-primary/60 italic">Obrigatório</span>
                   </label>
                   <input 
-                    {...register('firstName')}
-                    className={`w-full h-12 bg-white/5 border-2 ${errors.firstName ? 'border-red-500/50' : 'border-primary/30'} rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all`}
+                    value={newCustomer.firstName}
+                    onChange={(e) => setNewCustomer({...newCustomer, firstName: e.target.value})}
+                    className="w-full h-12 bg-white/5 border-2 border-primary/30 rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                     placeholder="João"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Sobrenome</label>
                   <input 
-                    {...register('lastName')}
+                    value={newCustomer.lastName}
+                    onChange={(e) => setNewCustomer({...newCustomer, lastName: e.target.value})}
                     className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-sm font-bold focus:ring-1 focus:ring-primary outline-none"
                     placeholder="Silva"
                   />
@@ -168,7 +123,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Apelido</label>
                   <input 
-                    {...register('nickname')}
+                    value={newCustomer.nickname}
+                    onChange={(e) => setNewCustomer({...newCustomer, nickname: e.target.value})}
                     className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-sm font-bold focus:ring-1 focus:ring-primary outline-none"
                     placeholder="Jão"
                   />
@@ -176,7 +132,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">CPF</label>
                   <input 
-                    {...register('cpf')}
+                    value={newCustomer.cpf}
+                    onChange={(e) => setNewCustomer({...newCustomer, cpf: e.target.value})}
                     className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-sm font-bold focus:ring-1 focus:ring-primary outline-none"
                     placeholder="000.000.000-00"
                   />
@@ -184,7 +141,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Nome da Empresa</label>
                   <input 
-                    {...register('companyName')}
+                    value={newCustomer.companyName}
+                    onChange={(e) => setNewCustomer({...newCustomer, companyName: e.target.value})}
                     className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-sm font-bold focus:ring-1 focus:ring-primary outline-none"
                     placeholder="Empresa LTDA"
                   />
@@ -192,15 +150,15 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-primary flex justify-between">
                     <span>Telefone (WhatsApp) *</span>
-                    {errors.phone && <span className="text-[8px] text-red-500 italic">{errors.phone.message}</span>}
+                    <span className="text-[8px] text-primary/60 italic">Obrigatório</span>
                   </label>
                   <div className="flex gap-2">
                     <div className="relative w-32 shrink-0">
                       <select
-                        value={country}
+                        value={parsePhone(newCustomer.phone).country}
                         onChange={(e) => {
-                          const currentNumber = number.replace(/\D/g, '');
-                          setValue('phone', e.target.value + currentNumber);
+                          const currentNumber = parsePhone(newCustomer.phone).number.replace(/\D/g, '');
+                          setNewCustomer({...newCustomer, phone: e.target.value + currentNumber});
                         }}
                         className="w-full h-12 bg-white/5 border-2 border-primary/30 rounded-xl pl-3 pr-8 text-sm font-bold focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all appearance-none text-white"
                       >
@@ -215,13 +173,14 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                       </div>
                     </div>
                     <input 
-                      value={formatNumber(country, number)}
+                      value={formatNumber(parsePhone(newCustomer.phone).country, parsePhone(newCustomer.phone).number)}
                       onChange={(e) => {
+                        const country = parsePhone(newCustomer.phone).country;
                         const rawNumber = e.target.value.replace(/\D/g, '');
-                        setValue('phone', country + rawNumber);
+                        setNewCustomer({...newCustomer, phone: country + rawNumber});
                       }}
-                      className={`flex-1 w-full h-12 bg-white/5 border-2 ${errors.phone ? 'border-red-500/50' : 'border-primary/30'} rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all`}
-                      placeholder={country === '+55' ? "(11) 9 9999-9999" : "Número"}
+                      className="flex-1 w-full h-12 bg-white/5 border-2 border-primary/30 rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                      placeholder={parsePhone(newCustomer.phone).country === '+55' ? "(11) 9 9999-9999" : "Número"}
                     />
                   </div>
                 </div>
@@ -230,8 +189,9 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xs">R$</span>
                     <input 
-                      type="text"
-                      {...register('creditLimit')}
+                      type="number"
+                      value={newCustomer.creditLimit}
+                      onChange={(e) => setNewCustomer({...newCustomer, creditLimit: e.target.value})}
                       className="w-full h-12 bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 text-sm font-bold focus:ring-1 focus:ring-primary outline-none"
                       placeholder="0.00"
                     />
@@ -241,28 +201,27 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
               <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Observações</label>
                 <textarea 
-                  {...register('observation')}
+                  value={newCustomer.observation}
+                  onChange={(e) => setNewCustomer({...newCustomer, observation: e.target.value})}
                   className="w-full h-32 bg-white/5 border border-white/10 rounded-xl p-4 text-sm font-bold focus:ring-1 focus:ring-primary outline-none resize-none"
                   placeholder="Notas sobre o cliente..."
                 />
               </div>
               <div className="flex gap-4 pt-4">
                 <button 
-                  type="button"
                   onClick={onClose}
                   className="flex-1 py-4 rounded-2xl font-bold text-slate-500 hover:bg-white/5 transition-all"
                 >
                   Cancelar
                 </button>
                 <button 
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 bg-primary text-white py-4 rounded-2xl font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+                  onClick={() => onSave(false)}
+                  className="flex-1 bg-primary text-white py-4 rounded-2xl font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]"
                 >
-                  {isSubmitting ? 'Salvando...' : (editingCustomer ? 'Atualizar Cliente' : 'Salvar Cliente')}
+                  {editingCustomer ? 'Atualizar Cliente' : 'Salvar Cliente'}
                 </button>
               </div>
-            </form>
+            </div>
           </motion.div>
         </div>
       )}

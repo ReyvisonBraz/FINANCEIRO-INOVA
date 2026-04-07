@@ -59,12 +59,41 @@ export const ServiceOrdersPage: React.FC = () => {
     deleteServiceOrderStatusAPI,
     addEquipmentTypeAPI,
     addBrandAPI,
-    addModelAPI
+    addModelAPI,
+    fetchServiceOrders,
+    fetchServiceOrderStatuses,
+    fetchEquipmentTypes,
+    fetchBrands,
+    fetchModels
   } = useServiceOrders();
-  const { customers } = useCustomers();
-  const { inventoryItems } = useInventory(showToast);
-  const { clientPayments, saveClientPaymentAPI } = useClientPayments();
+  const { customers, fetchCustomers } = useCustomers();
+  const { inventoryItems, fetchInventoryItems } = useInventory(showToast);
+  const { clientPayments, fetchClientPayments, saveClientPaymentAPI } = useClientPayments(showToast);
   const [isSavingPayment, setIsSavingPayment] = useState(false);
+
+  useEffect(() => {
+    fetchServiceOrders();
+    fetchServiceOrderStatuses();
+    fetchEquipmentTypes();
+    fetchBrands();
+    fetchModels();
+    fetchCustomers();
+    fetchInventoryItems();
+    fetchClientPayments(1);
+  }, [
+    fetchServiceOrders, 
+    fetchServiceOrderStatuses, 
+    fetchEquipmentTypes, 
+    fetchBrands, 
+    fetchModels, 
+    fetchCustomers, 
+    fetchInventoryItems, 
+    fetchClientPayments,
+    osStatusFilter,
+    osPriorityFilter,
+    osSortBy,
+    osDateFilter
+  ]);
 
   const navigate = useNavigate();
 
@@ -169,6 +198,7 @@ export const ServiceOrdersPage: React.FC = () => {
         installmentInterval: 'monthly',
         type: 'income'
       });
+      fetchClientPayments(1);
       showToast('Pagamento gerado com sucesso!', 'success');
     } catch (err) {
       console.error("Failed to add client payment", err);
@@ -198,6 +228,7 @@ export const ServiceOrdersPage: React.FC = () => {
           setOsPriorityFilter('all'); // Clear priority filter
           setOsSortBy('newest'); // Reset sort to newest
           setServiceOrdersPage(1);
+          await fetchServiceOrders(1, '', 'all', 'all', 'newest');
           showToast("Ordem de Serviço salva com sucesso!", "success");
           return saved.id;
         } catch (err: any) {
@@ -208,6 +239,7 @@ export const ServiceOrdersPage: React.FC = () => {
       onUpdateOrder={async (id, order) => {
         try {
           await saveServiceOrderAPI(order, id);
+          await fetchServiceOrders();
           showToast("Ordem de Serviço atualizada com sucesso!", "success");
           return true;
         } catch (err: any) {
@@ -217,21 +249,27 @@ export const ServiceOrdersPage: React.FC = () => {
       }}
       onDeleteOrder={async (id) => {
         await deleteServiceOrderAPI(id);
+        fetchServiceOrders();
       }}
       onAddStatus={async (status) => {
         await addServiceOrderStatusAPI(status);
+        await fetchServiceOrderStatuses();
       }}
       onDeleteStatus={async (id) => {
         await deleteServiceOrderStatusAPI(id);
+        await fetchServiceOrderStatuses();
       }}
       onAddEquipmentType={async (name, icon) => {
         await addEquipmentTypeAPI(name, icon);
+        await fetchEquipmentTypes();
       }}
       onAddBrand={async (name, equipmentType) => {
         await addBrandAPI(name, equipmentType);
+        await fetchBrands();
       }}
       onAddModel={async (brandId, name) => {
         await addModelAPI(brandId, name);
+        await fetchModels();
       }}
       onPrintBlankForm={() => {
         printBlankForm(settings);

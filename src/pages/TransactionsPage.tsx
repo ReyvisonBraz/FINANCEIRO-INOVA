@@ -42,10 +42,13 @@ export const TransactionsPage: React.FC = () => {
     transactions, 
     transactionsPage,
     setTransactionsPage,
-    deleteTransactionAPI,
-    isLoading,
-    isError
+    fetchTransactions,
+    deleteTransactionAPI
   } = useTransactions(showToast);
+
+  useEffect(() => {
+    fetchTransactions(transactionsPage, debouncedSearchTerm);
+  }, [fetchTransactions, transactionsPage, debouncedSearchTerm, dateFilterMode, selectedDate, selectedMonth, startDate, endDate, filterType, filterCategory, filterMinAmount, filterMaxAmount]);
 
   return (
     <Transactions 

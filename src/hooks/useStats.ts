@@ -1,14 +1,11 @@
-import { useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 import { useFilterStore } from '../store/useFilterStore';
 
-export const useStats = (month?: string) => {
+export const useStats = () => {
   const navigate = useNavigate();
   const { setDateFilterMode } = useFilterStore();
-
-  const { data: stats = { 
+  const [stats, setStats] = useState({ 
     totalIncome: 0, 
     totalExpenses: 0, 
     netBalance: 0, 
@@ -17,13 +14,25 @@ export const useStats = (month?: string) => {
     sortedExpenseRanking: [],
     pendingPayments: 0, 
     activeOS: 0 
-  }, isLoading, error, refetch: fetchStats } = useQuery({
-    queryKey: ['stats', month],
-    queryFn: async () => {
-      const res = await axios.get('/api/stats', { params: { month } });
-      return res.data;
-    }
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStats = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/stats');
+      if (!res.ok) throw new Error('Failed to fetch stats');
+      const data = await res.json();
+      setStats(data);
+    } catch (err) {
+      console.error("Failed to fetch stats", err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const handleChartClick = useCallback((data: any) => {
     if (data && data.activeLabel) {
@@ -35,7 +44,7 @@ export const useStats = (month?: string) => {
   return {
     stats,
     isLoading,
-    error: error instanceof Error ? error.message : null,
+    error,
     fetchStats,
     handleChartClick
   };
