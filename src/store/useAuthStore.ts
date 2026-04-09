@@ -17,7 +17,7 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  isAuthenticated: localStorage.getItem('isAuthenticated') === 'true',
+  isAuthenticated: localStorage.getItem('isAuthenticated') === 'true' && !!localStorage.getItem('auth_token'),
   currentUser: localStorage.getItem('currentUser') ? JSON.parse(localStorage.getItem('currentUser')!) : null,
   users: [],
   auditLogs: [],
