@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import cors from "cors";
 
 const JWT_SECRET = process.env.JWT_SECRET || 'financeiro-inova-secret-key-2024';
 const BCRYPT_ROUNDS = 10;
@@ -449,6 +450,7 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  app.use(cors());
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
