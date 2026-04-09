@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/apiFetch';
 import { useCallback } from 'react';
 import { ClientPayment } from '../types';
 import { useClientPaymentStore } from '../store/useClientPaymentStore';
@@ -10,7 +11,7 @@ export function useClientPayments(showToast: (message: string, type: 'success' |
 
   const fetchClientPayments = useCallback(async (page: number, searchTerm: string = '') => {
     try {
-      const res = await fetch(`/api/client-payments?page=${page}&limit=20&search=${searchTerm}`);
+      const res = await apiFetch(`/api/client-payments?page=${page}&limit=20&search=${searchTerm}`);
       if (!res.ok) throw new Error('Failed to fetch client payments');
       const data = await res.json();
       setClientPayments(data);
@@ -24,7 +25,7 @@ export function useClientPayments(showToast: (message: string, type: 'success' |
     const url = id ? `/api/client-payments/${id}` : '/api/client-payments';
     const method = id ? 'PUT' : 'POST';
     
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payment)
@@ -39,12 +40,12 @@ export function useClientPayments(showToast: (message: string, type: 'success' |
   }, []);
 
   const deleteClientPaymentAPI = useCallback(async (id: number) => {
-    const res = await fetch(`/api/client-payments/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`/api/client-payments/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete client payment');
   }, []);
 
   const recordPaymentAPI = useCallback(async (id: number, amount: number, date: string, updatedBy?: number) => {
-    const res = await fetch(`/api/client-payments/${id}/pay`, {
+    const res = await apiFetch(`/api/client-payments/${id}/pay`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount, date, updatedBy })

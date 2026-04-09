@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/apiFetch';
 import { useCallback } from 'react';
 import { Customer } from '../types';
 import { useToast } from '../components/ui/Toast';
@@ -14,7 +15,7 @@ export const useCustomers = () => {
 
   const fetchCustomers = useCallback(async () => {
     try {
-      const res = await fetch(`/api/customers?page=${customersPage}&limit=20&search=${customerSearchTerm}`);
+      const res = await apiFetch(`/api/customers?page=${customersPage}&limit=20&search=${customerSearchTerm}`);
       if (!res.ok) throw new Error('Failed to fetch customers');
       const data = await res.json();
       setCustomers(data);
@@ -27,7 +28,7 @@ export const useCustomers = () => {
   const saveCustomerAPI = useCallback(async (customer: Partial<Customer>, id?: number) => {
     const url = id ? `/api/customers/${id}` : '/api/customers';
     const method = id ? 'PUT' : 'POST';
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(customer)
@@ -43,12 +44,12 @@ export const useCustomers = () => {
   }, []);
 
   const deleteCustomerAPI = useCallback(async (id: number) => {
-    const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`/api/customers/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete customer');
   }, []);
 
   const checkCustomerPaymentsAPI = useCallback(async (id: number) => {
-    const res = await fetch(`/api/customers/${id}/payments`);
+    const res = await apiFetch(`/api/customers/${id}/payments`);
     if (!res.ok) throw new Error('Failed to fetch customer payments');
     return await res.json();
   }, []);

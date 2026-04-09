@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/apiFetch';
 import React, { useState, useEffect } from 'react';
 import { ClientPayments } from '../components/payments/ClientPayments';
 import { useClientPayments } from '../hooks/useClientPayments';
@@ -220,7 +221,7 @@ export const ClientPaymentsPage: React.FC = () => {
       'Deseja excluir todos os lançamentos desta venda agrupada? Esta ação não pode ser desfeita.',
       async () => {
         try {
-          const res = await fetch(`/api/client-payments/group/${saleId}`, { method: 'DELETE' });
+          const res = await apiFetch(`/api/client-payments/group/${saleId}`, { method: 'DELETE' });
           if (res.ok) {
             fetchClientPayments(paymentsPage, paymentSearchTerm);
             showToast('Venda excluída com sucesso.', 'success');

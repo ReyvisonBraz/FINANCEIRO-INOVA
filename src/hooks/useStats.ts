@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/apiFetch';
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFilterStore } from '../store/useFilterStore';
@@ -22,7 +23,7 @@ export const useStats = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/stats');
+      const res = await apiFetch('/api/stats');
       if (!res.ok) throw new Error('Failed to fetch stats');
       const data = await res.json();
       setStats(data);

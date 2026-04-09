@@ -6,11 +6,12 @@ interface AuthState {
   currentUser: User | null;
   users: User[];
   auditLogs: AuditLog[];
-  
-  login: (user: User) => void;
+
+  login: (user: User & { token?: string }) => void;
   logout: () => void;
   hasPermission: (permission: string) => boolean;
-  
+  getToken: () => string | null;
+
   setUsers: (users: User[]) => void;
   setAuditLogs: (logs: AuditLog[]) => void;
 }
@@ -20,18 +21,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   currentUser: localStorage.getItem('currentUser') ? JSON.parse(localStorage.getItem('currentUser')!) : null,
   users: [],
   auditLogs: [],
-  
+
   login: (user) => {
+    const { token, ...userWithoutToken } = user as any;
+    if (token) localStorage.setItem('auth_token', token);
     localStorage.setItem('isAuthenticated', 'true');
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    set({ isAuthenticated: true, currentUser: user });
+    localStorage.setItem('currentUser', JSON.stringify(userWithoutToken));
+    set({ isAuthenticated: true, currentUser: userWithoutToken });
   },
-  
+
   logout: () => {
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('auth_token');
     set({ isAuthenticated: false, currentUser: null });
   },
+
+  getToken: () => localStorage.getItem('auth_token'),
   
   hasPermission: (permission) => {
     const { currentUser } = get();

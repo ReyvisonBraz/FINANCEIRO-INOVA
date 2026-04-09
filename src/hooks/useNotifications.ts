@@ -1,75 +1,42 @@
-import { useMemo } from 'react';
-import { parseISO, startOfDay } from 'date-fns';
-import { ClientPayment, ServiceOrder } from '../types';
+import { apiFetch } from '../lib/apiFetch';
+import { useState, useEffect, useCallback } from 'react';
+
+const API_BASE = '';
 
 export const useNotifications = (
-  clientPayments: ClientPayment[],
-  serviceOrders: ServiceOrder[]
+  _clientPayments: any[],
+  _serviceOrders: any[]
 ) => {
-  const today = startOfDay(new Date());
+  const [overdueDebts, setOverdueDebts] = useState<any[]>([]);
+  const [dueTodayDebts, setDueTodayDebts] = useState<any[]>([]);
+  const [upcomingDebts, setUpcomingDebts] = useState<any[]>([]);
+  const [overdueServiceOrders, setOverdueServiceOrders] = useState<any[]>([]);
+  const [dueTodayServiceOrders, setDueTodayServiceOrders] = useState<any[]>([]);
+  const [upcomingServiceOrders, setUpcomingServiceOrders] = useState<any[]>([]);
 
-  const upcomingDebts = useMemo(() => {
-    return clientPayments.filter(p => {
-      if (p.status === 'paid') return false;
-      const dueDate = parseISO(p.dueDate);
-      dueDate.setHours(0, 0, 0, 0);
-      const diffTime = dueDate.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays > 0 && diffDays <= 3;
-    });
-  }, [clientPayments, today]);
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await apiFetch(`${API_BASE}/api/notifications`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setOverdueDebts(data.payments?.overdue || []);
+      setDueTodayDebts(data.payments?.dueToday || []);
+      setUpcomingDebts(data.payments?.upcoming || []);
+      setOverdueServiceOrders(data.serviceOrders?.overdue || []);
+      setDueTodayServiceOrders(data.serviceOrders?.dueToday || []);
+      setUpcomingServiceOrders(data.serviceOrders?.upcoming || []);
+    } catch {
+      // silently fail — notifications are non-critical
+    }
+  }, []);
 
-  const dueTodayDebts = useMemo(() => {
-    return clientPayments.filter(p => {
-      if (p.status === 'paid') return false;
-      const dueDate = parseISO(p.dueDate);
-      dueDate.setHours(0, 0, 0, 0);
-      return dueDate.getTime() === today.getTime();
-    });
-  }, [clientPayments, today]);
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 5 * 60 * 1000); // refresh every 5 min
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
-  const overdueDebts = useMemo(() => {
-    return clientPayments.filter(p => {
-      if (p.status === 'paid') return false;
-      const dueDate = parseISO(p.dueDate);
-      dueDate.setHours(0, 0, 0, 0);
-      return dueDate.getTime() < today.getTime();
-    });
-  }, [clientPayments, today]);
-
-  const overdueServiceOrders = useMemo(() => {
-    return serviceOrders.filter(o => {
-      if (o.status === 'Concluído' || o.status === 'Entregue' || o.status === 'Cancelado') return false;
-      if (!o.analysisPrediction) return false;
-      const predictionDate = parseISO(o.analysisPrediction);
-      predictionDate.setHours(0, 0, 0, 0);
-      return predictionDate.getTime() < today.getTime();
-    });
-  }, [serviceOrders, today]);
-
-  const dueTodayServiceOrders = useMemo(() => {
-    return serviceOrders.filter(o => {
-      if (o.status === 'Concluído' || o.status === 'Entregue' || o.status === 'Cancelado') return false;
-      if (!o.analysisPrediction) return false;
-      const predictionDate = parseISO(o.analysisPrediction);
-      predictionDate.setHours(0, 0, 0, 0);
-      return predictionDate.getTime() === today.getTime();
-    });
-  }, [serviceOrders, today]);
-
-  const upcomingServiceOrders = useMemo(() => {
-    return serviceOrders.filter(o => {
-      if (o.status === 'Concluído' || o.status === 'Entregue' || o.status === 'Cancelado') return false;
-      if (!o.analysisPrediction) return false;
-      const predictionDate = parseISO(o.analysisPrediction);
-      predictionDate.setHours(0, 0, 0, 0);
-      const diffTime = predictionDate.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays > 0 && diffDays <= 3;
-    });
-  }, [serviceOrders, today]);
-
-  const totalPaymentNotifications = upcomingDebts.length + dueTodayDebts.length + overdueDebts.length;
+  const totalPaymentNotifications = overdueDebts.length + dueTodayDebts.length + upcomingDebts.length;
   const totalServiceOrderNotifications = overdueServiceOrders.length + dueTodayServiceOrders.length + upcomingServiceOrders.length;
   const totalNotifications = totalPaymentNotifications + totalServiceOrderNotifications;
 
@@ -82,6 +49,7 @@ export const useNotifications = (
     upcomingServiceOrders,
     totalPaymentNotifications,
     totalServiceOrderNotifications,
-    totalNotifications
+    totalNotifications,
+    fetchNotifications
   };
 };

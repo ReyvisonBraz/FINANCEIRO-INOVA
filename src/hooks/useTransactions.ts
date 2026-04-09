@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/apiFetch';
 import { useState, useCallback, useMemo } from 'react';
 import { Transaction } from '../types';
 import { useFilterStore } from '../store/useFilterStore';
@@ -37,7 +38,7 @@ export function useTransactions(showToast: (message: string, type: 'success' | '
       if (filterMinAmount) url += `&minAmount=${filterMinAmount}`;
       if (filterMaxAmount) url += `&maxAmount=${filterMaxAmount}`;
 
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       if (!res.ok) throw new Error('Failed to fetch transactions');
       const data = await res.json();
       setTransactions(data);
@@ -57,7 +58,7 @@ export function useTransactions(showToast: (message: string, type: 'success' | '
     const url = id ? `/api/transactions/${id}` : '/api/transactions';
     const method = id ? 'PUT' : 'POST';
     
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(transaction)
@@ -72,7 +73,7 @@ export function useTransactions(showToast: (message: string, type: 'success' | '
   }, []);
 
   const deleteTransactionAPI = useCallback(async (id: number) => {
-    const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`/api/transactions/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete transaction');
   }, []);
 

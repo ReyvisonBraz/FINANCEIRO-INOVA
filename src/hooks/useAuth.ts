@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/apiFetch';
 import { useCallback } from 'react';
 import { User, AuditLog } from '../types';
 import { useAuthStore } from '../store/useAuthStore';
@@ -17,7 +18,7 @@ export function useAuth(showToast: (message: string, type: 'success' | 'error') 
 
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await fetch('/api/users');
+      const res = await apiFetch('/api/users');
       if (!res.ok) throw new Error('Failed to fetch users');
       const data = await res.json();
       setUsers(data);
@@ -29,7 +30,7 @@ export function useAuth(showToast: (message: string, type: 'success' | 'error') 
 
   const fetchAuditLogs = useCallback(async () => {
     try {
-      const res = await fetch('/api/audit-logs');
+      const res = await apiFetch('/api/audit-logs');
       if (!res.ok) throw new Error('Failed to fetch audit logs');
       const data = await res.json();
       setAuditLogs(data);
@@ -43,7 +44,7 @@ export function useAuth(showToast: (message: string, type: 'success' | 'error') 
     const url = id ? `/api/users/${id}` : '/api/users';
     const method = id ? 'PUT' : 'POST';
     
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(user)
@@ -58,7 +59,7 @@ export function useAuth(showToast: (message: string, type: 'success' | 'error') 
   }, []);
 
   const deleteUserAPI = useCallback(async (id: number) => {
-    const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete user');
   }, []);
 

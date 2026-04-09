@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/apiFetch';
 import { useCallback } from 'react';
 import { ClientPayment, Customer, AppSettings } from '../types';
 import { getA4ReceiptTemplate, getThermalReceiptTemplate } from '../lib/receiptTemplates';
@@ -21,7 +22,7 @@ export function useReceipt(settings: AppSettings, customers: Customer[]) {
 
     // Salvar recibo no banco de dados
     try {
-      await fetch('/api/receipts', {
+      await apiFetch('/api/receipts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

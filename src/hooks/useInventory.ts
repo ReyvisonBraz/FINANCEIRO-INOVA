@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/apiFetch';
 import { useCallback } from 'react';
 import { InventoryItem } from '../types';
 import { useInventoryStore } from '../store/useInventoryStore';
@@ -7,7 +8,7 @@ export function useInventory(showToast: (message: string, type: 'success' | 'err
 
   const fetchInventoryItems = useCallback(async () => {
     try {
-      const res = await fetch('/api/inventory');
+      const res = await apiFetch('/api/inventory');
       if (!res.ok) throw new Error('Failed to fetch inventory');
       const data = await res.json();
       setInventoryItems(data);
@@ -21,7 +22,7 @@ export function useInventory(showToast: (message: string, type: 'success' | 'err
     const url = id ? `/api/inventory/${id}` : '/api/inventory';
     const method = id ? 'PUT' : 'POST';
     
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(item)
@@ -36,7 +37,7 @@ export function useInventory(showToast: (message: string, type: 'success' | 'err
   }, []);
 
   const deleteInventoryItemAPI = useCallback(async (id: number) => {
-    const res = await fetch(`/api/inventory/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`/api/inventory/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete inventory item');
   }, []);
 

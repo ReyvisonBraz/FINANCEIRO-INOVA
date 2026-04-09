@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/apiFetch';
 import { useCallback } from 'react';
 import { ServiceOrder, ServiceOrderStatus, Brand, Model } from '../types';
 import { useServiceOrderStore } from '../store/useServiceOrderStore';
@@ -41,7 +42,7 @@ export const useServiceOrders = () => {
         dateFilter: targetDateFilter
       });
 
-      const res = await fetch(`/api/service-orders?${query.toString()}`);
+      const res = await apiFetch(`/api/service-orders?${query.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setServiceOrders(data);
@@ -64,7 +65,7 @@ export const useServiceOrders = () => {
 
   const fetchServiceOrderStatuses = useCallback(async () => {
     try {
-      const res = await fetch('/api/service-order-statuses');
+      const res = await apiFetch('/api/service-order-statuses');
       if (res.ok) {
         const data = await res.json();
         setServiceOrderStatuses(data);
@@ -77,7 +78,7 @@ export const useServiceOrders = () => {
 
   const fetchEquipmentTypes = useCallback(async () => {
     try {
-      const res = await fetch('/api/equipment-types');
+      const res = await apiFetch('/api/equipment-types');
       if (res.ok) {
         const data = await res.json();
         setEquipmentTypes(data);
@@ -90,7 +91,7 @@ export const useServiceOrders = () => {
 
   const fetchBrands = useCallback(async () => {
     try {
-      const res = await fetch('/api/brands');
+      const res = await apiFetch('/api/brands');
       if (res.ok) {
         const data = await res.json();
         setBrands(data);
@@ -103,7 +104,7 @@ export const useServiceOrders = () => {
 
   const fetchModels = useCallback(async () => {
     try {
-      const res = await fetch('/api/models');
+      const res = await apiFetch('/api/models');
       if (res.ok) {
         const data = await res.json();
         setModels(data);
@@ -117,7 +118,7 @@ export const useServiceOrders = () => {
   const saveServiceOrderAPI = useCallback(async (order: any, id?: number) => {
     const url = id ? `/api/service-orders/${id}` : '/api/service-orders';
     const method = id ? 'PUT' : 'POST';
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(order)
@@ -132,12 +133,12 @@ export const useServiceOrders = () => {
   }, []);
 
   const deleteServiceOrderAPI = useCallback(async (id: number) => {
-    const res = await fetch(`/api/service-orders/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`/api/service-orders/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete service order');
   }, []);
 
   const addServiceOrderStatusAPI = useCallback(async (status: any) => {
-    const res = await fetch('/api/service-order-statuses', {
+    const res = await apiFetch('/api/service-order-statuses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(status)
@@ -146,12 +147,12 @@ export const useServiceOrders = () => {
   }, []);
 
   const deleteServiceOrderStatusAPI = useCallback(async (id: number) => {
-    const res = await fetch(`/api/service-order-statuses/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`/api/service-order-statuses/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete status');
   }, []);
 
   const addEquipmentTypeAPI = useCallback(async (name: string, icon?: string) => {
-    const res = await fetch('/api/equipment-types', {
+    const res = await apiFetch('/api/equipment-types', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, icon })
@@ -160,12 +161,12 @@ export const useServiceOrders = () => {
   }, []);
 
   const deleteEquipmentTypeAPI = useCallback(async (id: number) => {
-    const res = await fetch(`/api/equipment-types/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`/api/equipment-types/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete equipment type');
   }, []);
 
   const addBrandAPI = useCallback(async (name: string, equipmentType: string) => {
-    const res = await fetch('/api/brands', {
+    const res = await apiFetch('/api/brands', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, equipmentType })
@@ -174,12 +175,12 @@ export const useServiceOrders = () => {
   }, []);
 
   const deleteBrandAPI = useCallback(async (id: number) => {
-    const res = await fetch(`/api/brands/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`/api/brands/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete brand');
   }, []);
 
   const addModelAPI = useCallback(async (brandId: number, name: string) => {
-    const res = await fetch('/api/models', {
+    const res = await apiFetch('/api/models', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ brandId, name })
@@ -188,7 +189,7 @@ export const useServiceOrders = () => {
   }, []);
 
   const deleteModelAPI = useCallback(async (id: number) => {
-    const res = await fetch(`/api/models/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`/api/models/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete model');
   }, []);
 

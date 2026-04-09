@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/apiFetch';
 import { useCallback } from 'react';
 import { AppSettings } from '../types';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -30,7 +31,7 @@ export function useSettings(showToast: (message: string, type: 'success' | 'erro
 
   const addCategory = useCallback(async (category: any) => {
     try {
-      const res = await fetch('/api/categories', {
+      const res = await apiFetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(category),
@@ -44,7 +45,7 @@ export function useSettings(showToast: (message: string, type: 'success' | 'erro
 
   const deleteCategory = useCallback(async (id: number) => {
     try {
-      const res = await fetch(`/api/categories/${id}`, {
+      const res = await apiFetch(`/api/categories/${id}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete category');

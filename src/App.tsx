@@ -1,3 +1,4 @@
+import { apiFetch } from './lib/apiFetch';
 import React, { useEffect, lazy, Suspense } from 'react';
 import { useLocation, useNavigate, Routes, Route, Navigate } from 'react-router-dom';
 import { 
@@ -274,7 +275,8 @@ export default function App() {
     upcomingServiceOrders,
     totalPaymentNotifications,
     totalServiceOrderNotifications,
-    totalNotifications
+    totalNotifications,
+    fetchNotifications
   } = useNotifications(clientPayments.data, serviceOrders.data);
 
   useEffect(() => {
@@ -662,7 +664,7 @@ export default function App() {
       async () => {
         try {
           // We need a new endpoint or just loop. Let's add a query param to delete by saleId.
-          const res = await fetch(`/api/client-payments/group/${saleId}`, { method: 'DELETE' });
+          const res = await apiFetch(`/api/client-payments/group/${saleId}`, { method: 'DELETE' });
           if (res.ok) {
             fetchClientPayments(paymentsPage, paymentSearchTerm);
             fetchAuditLogs();
@@ -679,40 +681,23 @@ export default function App() {
 
   const handleRecordPayment = async () => {
     if (!isRecordingPayment || !paymentAmount) return;
-    
+
     const amount = parseFloat(paymentAmount.toString().replace(',', '.'));
-    const newPaidAmount = isRecordingPayment.paidAmount + amount;
-    const newStatus = newPaidAmount >= isRecordingPayment.totalAmount ? 'paid' : 'partial';
 
-    let currentHistory = [];
-    try {
-      if (isRecordingPayment.paymentHistory) {
-        currentHistory = JSON.parse(isRecordingPayment.paymentHistory);
-      }
-    } catch (e) {}
-
-    // Convert the selected date to ISO string, keeping the current time
     const [y, m, d] = paymentDate.split('-');
     const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
     const now = new Date();
     dateObj.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
 
-    const newHistory = [...currentHistory, {
-      amount: amount,
-      date: dateObj.toISOString()
-    }];
-
     try {
-      await saveClientPaymentAPI({
-        paidAmount: newPaidAmount,
-        status: newStatus,
-        paymentHistory: JSON.stringify(newHistory),
-        updatedBy: currentUser?.id
-      }, isRecordingPayment.id);
+      await recordPaymentAPI(isRecordingPayment.id, amount, dateObj.toISOString(), currentUser?.id);
       setIsRecordingPayment(null);
       setPaymentAmount('');
       fetchClientPayments(paymentsPage, paymentSearchTerm);
+      fetchTransactions(transactionsPage, searchTerm);
       fetchAuditLogs();
+      fetchNotifications();
+      showToast('Pagamento registrado com sucesso!', 'success');
     } catch (err) {
       console.error("Failed to record payment", err);
       showToast('Erro ao registrar pagamento.', 'error');
@@ -932,6 +917,7 @@ export default function App() {
       });
       fetchTransactions(transactionsPage, searchTerm);
       fetchAuditLogs();
+      showToast(editingTransaction ? 'Transação atualizada com sucesso!' : 'Transação adicionada com sucesso!', 'success');
     } catch (err) {
       console.error("Failed to save", err);
       showToast('Erro ao salvar transação.', 'error');
@@ -1033,6 +1019,7 @@ export default function App() {
       await saveInventoryItemAPI({ ...item, createdBy: currentUser?.id });
       fetchInventoryItems();
       fetchAuditLogs();
+      showToast('Item adicionado ao estoque com sucesso!', 'success');
     } catch (err) {
       console.error("Failed to add inventory item", err);
       showToast('Erro ao adicionar item ao estoque.', 'error');
@@ -1044,6 +1031,7 @@ export default function App() {
       await saveInventoryItemAPI({ ...item, updatedBy: currentUser?.id }, id);
       fetchInventoryItems();
       fetchAuditLogs();
+      showToast('Item atualizado com sucesso!', 'success');
     } catch (err) {
       console.error("Failed to update inventory item", err);
       showToast('Erro ao atualizar item do estoque.', 'error');
@@ -1055,6 +1043,7 @@ export default function App() {
       await deleteInventoryItemAPI(id);
       fetchInventoryItems();
       fetchAuditLogs();
+      showToast('Item excluído do estoque.', 'success');
     } catch (err) {
       console.error("Failed to delete inventory item", err);
       showToast('Erro ao excluir item do estoque.', 'error');

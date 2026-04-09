@@ -4,6 +4,11 @@ import Database from "better-sqlite3";
 import path from "path";
 import { fileURLToPath } from "url";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || 'financeiro-inova-secret-key-2024';
+const BCRYPT_ROUNDS = 10;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -78,6 +83,40 @@ const ServiceOrderSchema = z.object({
   finalObservations: z.string().optional().nullable(),
   createdBy: z.number().optional(),
   updatedBy: z.number().optional()
+});
+
+const ReceiptSchema = z.object({
+  paymentId: z.number().int().positive(),
+  content: z.string().min(1)
+});
+
+const InventoryItemSchema = z.object({
+  name: z.string().min(1),
+  category: z.enum(['product', 'service']),
+  sku: z.string().optional().nullable(),
+  costPrice: z.number().nonnegative().optional(),
+  salePrice: z.number().nonnegative().optional(),
+  unitPrice: z.number().nonnegative().optional(),
+  quantity: z.number().int().nonnegative().optional(),
+  stockLevel: z.number().int().nonnegative().optional(),
+  minQuantity: z.number().int().nonnegative().optional(),
+  createdBy: z.number().optional(),
+  updatedBy: z.number().optional()
+});
+
+const UserSchema = z.object({
+  username: z.string().min(1),
+  password: z.string().min(4),
+  role: z.enum(['owner', 'admin', 'employee']),
+  name: z.string().min(1),
+  permissions: z.array(z.string()).optional()
+});
+
+const UserUpdateSchema = z.object({
+  name: z.string().min(1),
+  role: z.enum(['owner', 'admin', 'employee']),
+  password: z.string().min(4).optional(),
+  permissions: z.array(z.string()).optional()
 });
 
 // --- Helper for Paginated Responses ---
@@ -352,9 +391,9 @@ migrations.forEach(m => {
 // Inserir usuário Admin padrão se não existir
 const usersCount = db.prepare("SELECT COUNT(*) as count FROM users").get() as { count: number };
 if (usersCount.count === 0) {
-  // Admin tem todas as permissões por padrão
   const allPermissions = JSON.stringify(['view_dashboard', 'manage_transactions', 'view_reports', 'manage_customers', 'manage_payments', 'manage_settings', 'manage_users']);
-  db.prepare("INSERT INTO users (username, password, role, name, permissions) VALUES (?, ?, ?, ?, ?)").run('admin', 'admin', 'owner', 'Administrador', allPermissions);
+  const adminHash = bcrypt.hashSync('admin', BCRYPT_ROUNDS);
+  db.prepare("INSERT INTO users (username, password, role, name, permissions) VALUES (?, ?, ?, ?, ?)").run('admin', adminHash, 'owner', 'Administrador', allPermissions);
 }
 
 // Inserir configurações padrão se não existirem
@@ -412,6 +451,20 @@ async function startServer() {
 
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+  // Middleware de autenticação JWT — aplicado a todas as rotas /api/* exceto /api/login
+  app.use('/api', (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.path === '/login' && req.method === 'POST') return next();
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!token) return res.status(401).json({ error: 'Token de autenticação requerido' });
+    try {
+      (req as any).user = jwt.verify(token, JWT_SECRET);
+      next();
+    } catch {
+      return res.status(401).json({ error: 'Token inválido ou expirado' });
+    }
+  });
 
   // Rotas da API
 
@@ -852,6 +905,55 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  // Endpoint de Notificações (vencimentos sem paginação)
+  app.get("/api/notifications", (req, res) => {
+    const today = new Date().toISOString().split('T')[0];
+    const threeDaysLater = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const overduePayments = db.prepare(`
+      SELECT id, customerId, description, totalAmount, paidAmount, dueDate, status
+      FROM client_payments
+      WHERE status != 'paid' AND dueDate < ?
+      ORDER BY dueDate ASC
+    `).all(today);
+
+    const dueTodayPayments = db.prepare(`
+      SELECT id, customerId, description, totalAmount, paidAmount, dueDate, status
+      FROM client_payments
+      WHERE status != 'paid' AND dueDate = ?
+    `).all(today);
+
+    const upcomingPayments = db.prepare(`
+      SELECT id, customerId, description, totalAmount, paidAmount, dueDate, status
+      FROM client_payments
+      WHERE status != 'paid' AND dueDate > ? AND dueDate <= ?
+    `).all(today, threeDaysLater);
+
+    const overdueOrders = db.prepare(`
+      SELECT id, customerId, equipmentType, equipmentBrand, equipmentModel, status, analysisPrediction
+      FROM service_orders
+      WHERE status NOT IN ('Concluído','Entregue','Cancelado') AND analysisPrediction IS NOT NULL AND analysisPrediction < ?
+      ORDER BY analysisPrediction ASC
+    `).all(today);
+
+    const dueTodayOrders = db.prepare(`
+      SELECT id, customerId, equipmentType, equipmentBrand, equipmentModel, status, analysisPrediction
+      FROM service_orders
+      WHERE status NOT IN ('Concluído','Entregue','Cancelado') AND analysisPrediction = ?
+    `).all(today);
+
+    const upcomingOrders = db.prepare(`
+      SELECT id, customerId, equipmentType, equipmentBrand, equipmentModel, status, analysisPrediction
+      FROM service_orders
+      WHERE status NOT IN ('Concluído','Entregue','Cancelado') AND analysisPrediction > ? AND analysisPrediction <= ?
+    `).all(today, threeDaysLater);
+
+    res.json({
+      payments: { overdue: overduePayments, dueToday: dueTodayPayments, upcoming: upcomingPayments },
+      serviceOrders: { overdue: overdueOrders, dueToday: dueTodayOrders, upcoming: upcomingOrders }
+    });
+  });
+
   // Rotas de Categorias
   app.get("/api/categories", (req, res) => {
     const categories = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
@@ -876,33 +978,51 @@ async function startServer() {
   });
 
   app.post("/api/receipts", (req, res) => {
-    const { paymentId, content } = req.body;
-    const result = db.prepare("INSERT INTO receipts (paymentId, content) VALUES (?, ?)").run(paymentId, content);
-    res.json({ id: result.lastInsertRowid });
+    try {
+      const { paymentId, content } = ReceiptSchema.parse(req.body);
+      const result = db.prepare("INSERT INTO receipts (paymentId, content) VALUES (?, ?)").run(paymentId, content);
+      res.json({ id: result.lastInsertRowid });
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Validation failed", details: error.issues });
+      res.status(500).json({ error: "Internal server error" });
+    }
   });
 
   // Rotas de Autenticação
   app.post("/api/login", (req, res) => {
     const { username, password } = req.body;
-    const user = db.prepare("SELECT * FROM users WHERE username = ? AND password = ?").get(username, password) as any;
-    
-    if (user) {
-      // Parse permissions
-      try {
-        user.permissions = JSON.parse(user.permissions || '[]');
-      } catch (e) {
-        user.permissions = [];
-      }
-      
-      // Se for owner, garante todas as permissões
-      if (user.role === 'owner') {
-        user.permissions = ['view_dashboard', 'manage_transactions', 'view_reports', 'manage_customers', 'manage_payments', 'manage_settings', 'manage_users'];
-      }
+    if (!username || !password) return res.status(400).json({ error: "Credenciais obrigatórias" });
 
-      res.json(user);
-    } else {
-      res.status(401).json({ error: "Credenciais inválidas" });
+    const user = db.prepare("SELECT * FROM users WHERE username = ?").get(username) as any;
+    if (!user) return res.status(401).json({ error: "Credenciais inválidas" });
+
+    // Suporte a senhas ainda em plain text (migração progressiva)
+    const passwordMatch = user.password.startsWith('$2')
+      ? bcrypt.compareSync(password, user.password)
+      : password === user.password;
+
+    if (!passwordMatch) return res.status(401).json({ error: "Credenciais inválidas" });
+
+    // Se senha ainda é plain text, migra para hash agora
+    if (!user.password.startsWith('$2')) {
+      const hashed = bcrypt.hashSync(password, BCRYPT_ROUNDS);
+      db.prepare("UPDATE users SET password = ? WHERE id = ?").run(hashed, user.id);
     }
+
+    try {
+      user.permissions = JSON.parse(user.permissions || '[]');
+    } catch (e) {
+      user.permissions = [];
+    }
+
+    if (user.role === 'owner') {
+      user.permissions = ['view_dashboard', 'manage_transactions', 'view_reports', 'manage_customers', 'manage_payments', 'manage_settings', 'manage_users'];
+    }
+
+    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '8h' });
+
+    const { password: _pw, ...userWithoutPassword } = user;
+    res.json({ ...userWithoutPassword, token });
   });
 
   // Rotas de Usuários
@@ -923,10 +1043,11 @@ async function startServer() {
   });
 
   app.post("/api/users", (req, res) => {
-    const { username, password, role, name, permissions } = req.body;
     try {
+      const { username, password, role, name, permissions } = UserSchema.parse(req.body);
       const permsString = JSON.stringify(permissions || []);
-      const result = db.prepare("INSERT INTO users (username, password, role, name, permissions) VALUES (?, ?, ?, ?, ?)").run(username, password, role, name, permsString);
+      const hashedPassword = bcrypt.hashSync(password, BCRYPT_ROUNDS);
+      const result = db.prepare("INSERT INTO users (username, password, role, name, permissions) VALUES (?, ?, ?, ?, ?)").run(username, hashedPassword, role, name, permsString);
       
       // Log action
       db.prepare("INSERT INTO audit_logs (userId, action, entity, entityId, details) VALUES (?, ?, ?, ?, ?)").run(1, 'create', 'user', result.lastInsertRowid, `Created user ${username}`);
@@ -938,13 +1059,13 @@ async function startServer() {
   });
 
   app.put("/api/users/:id", (req, res) => {
-    const { name, role, password, permissions } = req.body;
-    
     try {
+      const { name, role, password, permissions } = UserUpdateSchema.parse(req.body);
       const permsString = JSON.stringify(permissions || []);
       
       if (password) {
-        db.prepare("UPDATE users SET name = ?, role = ?, password = ?, permissions = ? WHERE id = ?").run(name, role, password, permsString, req.params.id);
+        const hashedPassword = bcrypt.hashSync(password, BCRYPT_ROUNDS);
+        db.prepare("UPDATE users SET name = ?, role = ?, password = ?, permissions = ? WHERE id = ?").run(name, role, hashedPassword, permsString, req.params.id);
       } else {
         db.prepare("UPDATE users SET name = ?, role = ?, permissions = ? WHERE id = ?").run(name, role, permsString, req.params.id);
       }
@@ -981,8 +1102,8 @@ async function startServer() {
   });
 
   app.post("/api/inventory", (req, res) => {
-    const { name, category, sku, costPrice, salePrice, quantity, minQuantity, unitPrice, stockLevel, createdBy } = req.body;
     try {
+      const { name, category, sku, costPrice, salePrice, quantity, minQuantity, unitPrice, stockLevel, createdBy } = InventoryItemSchema.parse(req.body);
       const finalUnitPrice = unitPrice !== undefined ? unitPrice : (salePrice || 0);
       const finalStockLevel = stockLevel !== undefined ? stockLevel : (quantity || 0);
       
@@ -993,14 +1114,15 @@ async function startServer() {
       db.prepare("INSERT INTO audit_logs (userId, action, entity, entityId, details) VALUES (?, ?, ?, ?, ?)").run(createdBy || 1, 'create', 'InventoryItem', result.lastInsertRowid, `Created item ${name}`);
       
       res.json({ id: result.lastInsertRowid });
-    } catch (e: any) {
-      res.status(400).json({ error: e.message });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Validation failed", details: error.issues });
+      res.status(400).json({ error: error.message });
     }
   });
 
   app.put("/api/inventory/:id", (req, res) => {
-    const { name, category, sku, costPrice, salePrice, quantity, minQuantity, unitPrice, stockLevel, updatedBy } = req.body;
     try {
+      const { name, category, sku, costPrice, salePrice, quantity, minQuantity, unitPrice, stockLevel, updatedBy } = InventoryItemSchema.parse(req.body);
       const finalUnitPrice = unitPrice !== undefined ? unitPrice : (salePrice || 0);
       const finalStockLevel = stockLevel !== undefined ? stockLevel : (quantity || 0);
       
@@ -1011,8 +1133,9 @@ async function startServer() {
       db.prepare("INSERT INTO audit_logs (userId, action, entity, entityId, details) VALUES (?, ?, ?, ?, ?)").run(updatedBy || 1, 'update', 'InventoryItem', req.params.id, `Updated item ${name}`);
       
       res.json({ success: true });
-    } catch (e: any) {
-      res.status(400).json({ error: e.message });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Validation failed", details: error.issues });
+      res.status(400).json({ error: error.message });
     }
   });
 
@@ -1152,8 +1275,16 @@ async function startServer() {
         serviceFee || 0, totalAmount || 0, finalObservations || null
       );
       
+      // Decrementar estoque das peças usadas na criação
+      const parsedParts = partsUsed ? (Array.isArray(partsUsed) ? partsUsed : JSON.parse(partsString)) : [];
+      parsedParts.forEach((p: any) => {
+        if (p.id && p.quantity) {
+          db.prepare("UPDATE inventory_items SET stockLevel = stockLevel - ? WHERE id = ?").run(p.quantity, p.id);
+        }
+      });
+
       db.prepare("INSERT INTO audit_logs (userId, action, entity, entityId, details) VALUES (?, ?, ?, ?, ?)").run(createdBy || 1, 'create', 'ServiceOrder', result.lastInsertRowid, `Created OS for customer ${customerId}`);
-      
+
       res.json({ id: result.lastInsertRowid });
     } catch (error) {
       if (error instanceof z.ZodError) {

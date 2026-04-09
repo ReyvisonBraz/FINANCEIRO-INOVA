@@ -19,12 +19,12 @@ export const CustomersPage: React.FC = () => {
   const [localSearchTerm, setLocalSearchTerm] = useState(customerSearchTerm);
   const debouncedSearchTerm = useDebounce(localSearchTerm, 500);
   
-  const { 
-    customers, 
+  const {
+    customers,
     customersPage,
     setCustomersPage,
     deleteCustomerAPI,
-    fetchCustomers 
+    fetchCustomers
   } = useCustomers();
 
   // Update global search term when debounced local term changes
@@ -35,7 +35,7 @@ export const CustomersPage: React.FC = () => {
 
   useEffect(() => {
     fetchCustomers();
-  }, [fetchCustomers]);
+  }, [fetchCustomers, customersPage]);
 
   const { clientPayments } = useClientPayments(showToast);
   const { 

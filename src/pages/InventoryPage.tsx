@@ -24,11 +24,11 @@ export const InventoryPage: React.FC = () => {
   const { isAddingInventoryItem, setIsAddingInventoryItem } = useAppStore();
   const { openConfirm } = useModalStore();
 
-  const { 
-    inventoryItems, 
-    saveInventoryItemAPI, 
+  const {
+    inventoryItems,
+    saveInventoryItemAPI,
     deleteInventoryItemAPI,
-    fetchInventoryItems 
+    fetchInventoryItems
   } = useInventory(showToast);
 
   useEffect(() => {
@@ -44,12 +44,42 @@ export const InventoryPage: React.FC = () => {
     stockLevel: ''
   });
 
+  const handleAddItem = async (item: any) => {
+    try {
+      await saveInventoryItemAPI(item);
+      await fetchInventoryItems();
+      showToast('Item adicionado com sucesso!', 'success');
+    } catch (err) {
+      showToast('Erro ao adicionar item.', 'error');
+    }
+  };
+
+  const handleUpdateItem = async (id: number, item: any) => {
+    try {
+      await saveInventoryItemAPI(item, id);
+      await fetchInventoryItems();
+      showToast('Item atualizado com sucesso!', 'success');
+    } catch (err) {
+      showToast('Erro ao atualizar item.', 'error');
+    }
+  };
+
+  const handleDeleteItem = async (id: number) => {
+    try {
+      await deleteInventoryItemAPI(id);
+      await fetchInventoryItems();
+      showToast('Item excluído com sucesso!', 'success');
+    } catch (err) {
+      showToast('Erro ao excluir item.', 'error');
+    }
+  };
+
   return (
-    <Inventory 
+    <Inventory
       items={inventoryItems}
-      onAddItem={(item) => saveInventoryItemAPI(item)}
-      onUpdateItem={(id, item) => saveInventoryItemAPI(item, id)}
-      onDeleteItem={deleteInventoryItemAPI}
+      onAddItem={handleAddItem}
+      onUpdateItem={handleUpdateItem}
+      onDeleteItem={handleDeleteItem}
       searchTerm={localSearchTerm}
       onSearchChange={setLocalSearchTerm}
       categoryFilter={inventoryCategoryFilter}
