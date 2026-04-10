@@ -19,6 +19,16 @@ export const DirectOsSearchModal: React.FC<DirectOsSearchModalProps> = ({
   const [directOsSearch, setDirectOsSearch] = React.useState('');
   const { showToast } = useToast();
 
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && show) {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [show, onClose]);
+
     const handleDirectOsSearch = (e: React.FormEvent) => {
       e.preventDefault();
       if (!directOsSearch.trim()) return;
