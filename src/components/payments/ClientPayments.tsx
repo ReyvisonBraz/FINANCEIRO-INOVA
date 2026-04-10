@@ -436,7 +436,7 @@ export const ClientPayments = ({
                             </div>
                             <div>
                               <p className="text-sm font-bold text-primary">{item.payments[0].customerName}</p>
-                              <p className="text-xs text-slate-500 uppercase tracking-widest">{item.payments[0].description.split(' (')[0]}</p>
+                              <p className="text-xs text-slate-500 uppercase tracking-widest">{item.payments[0].description?.split(' (')[0] || '-'}</p>
                             </div>
                           </div>
                         </td>

@@ -177,7 +177,7 @@ export const ServiceOrderCard: React.FC<ServiceOrderCardProps> = ({
                 <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Entrada</span>
                 <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-500/5 border border-blue-500/10 text-[10px] text-blue-400 font-bold shadow-sm">
                   <Calendar size={12} />
-                  {order.entryDate ? order.entryDate.split('-').reverse().join('/') : safeFormatDate(order.createdAt, 'dd/MM/yy')}
+                  {order.entryDate?.split('-').reverse().join('/') || safeFormatDate(order.createdAt, 'dd/MM/yy')}
                 </div>
               </div>
             )}
