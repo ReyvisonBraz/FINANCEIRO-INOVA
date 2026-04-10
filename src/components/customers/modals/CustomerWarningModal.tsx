@@ -15,6 +15,15 @@ export const CustomerWarningModal: React.FC<CustomerWarningModalProps> = ({
   type,
   onConfirm
 }) => {
+  React.useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, onClose]);
+
   return (
     <AnimatePresence>
       {isOpen && (

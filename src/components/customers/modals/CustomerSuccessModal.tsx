@@ -4,6 +4,7 @@ import { CheckCircle2, Wallet, Briefcase, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../../store/useAppStore';
 import { useFormStore } from '../../../store/useFormStore';
+import { useModalStore } from '../../../store/useModalStore';
 
 interface CustomerSuccessModalProps {
   isOpen: boolean;
@@ -21,6 +22,16 @@ export const CustomerSuccessModal: React.FC<CustomerSuccessModalProps> = ({
   const navigate = useNavigate();
   const { setIsAddingClientPayment, setIsAddingServiceOrder, setActiveScreen } = useAppStore();
   const { setNewClientPayment, setNewServiceOrder } = useFormStore();
+  const { setShowCustomerSuccessModal } = useModalStore();
+
+  React.useEffect(() => {
+    if (isOpen && customerId) {
+      const timer = setTimeout(() => {
+        setShowCustomerSuccessModal(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, customerId, setShowCustomerSuccessModal]);
 
   if (!isOpen || !customerId) return null;
 

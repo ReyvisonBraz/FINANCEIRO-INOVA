@@ -32,10 +32,7 @@ export const useServiceOrders = () => {
     try {
       let query = supabase
         .from('service_orders')
-        .select(`
-          *,
-          customer:customers(id, first_name, last_name, phone)
-        `, { count: 'exact' })
+        .select('*')
         .range((targetPage - 1) * 20, targetPage * 20 - 1);
 
       if (targetSearch) {

@@ -128,13 +128,15 @@ export const useFilterStore = create<FilterState>((set) => ({
   dashboardMonth: format(new Date(), 'yyyy-MM'),
   setDashboardMonth: (month) => set({ dashboardMonth: month }),
   handlePrevMonth: () => set((state) => {
-    const [year, month] = state.dashboardMonth.split('-');
+    const current = state.dashboardMonth || format(new Date(), 'yyyy-MM');
+    const [year, month] = current.split('-');
     const d = new Date(parseInt(year), parseInt(month) - 1, 1);
     d.setMonth(d.getMonth() - 1);
     return { dashboardMonth: format(d, 'yyyy-MM') };
   }),
   handleNextMonth: () => set((state) => {
-    const [year, month] = state.dashboardMonth.split('-');
+    const current = state.dashboardMonth || format(new Date(), 'yyyy-MM');
+    const [year, month] = current.split('-');
     const d = new Date(parseInt(year), parseInt(month) - 1, 1);
     d.setMonth(d.getMonth() + 1);
     return { dashboardMonth: format(d, 'yyyy-MM') };

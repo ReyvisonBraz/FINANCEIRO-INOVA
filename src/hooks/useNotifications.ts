@@ -20,15 +20,13 @@ export const useNotifications = (
       const [paymentsResult, ordersResult] = await Promise.all([
         supabase
           .from('client_payments')
-          .select('*, customer:customers(first_name, last_name)', { count: 'exact' })
+          .select('*, customer:customers(first_name, last_name)')
           .neq('status', 'paid')
           .order('due_date', { ascending: true }),
         supabase
           .from('service_orders')
-          .select('*, customer:customers(first_name, last_name)', { count: 'exact' })
-          .not().eq('status', 'Concluído')
-          .not().eq('status', 'Entregue')
-          .not().eq('status', 'Cancelado')
+          .select('*')
+          .or('status.neq.Concluído,status.neq.Entregue,status.neq.Cancelado')
           .order('entry_date', { ascending: true })
       ]);
 

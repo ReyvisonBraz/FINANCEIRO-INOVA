@@ -14,9 +14,14 @@ export function formatCurrency(amount: number) {
   }).format(amount);
 }
 
-export const formatMonthYear = (dateStr: string) => {
-  const [year, month] = dateStr.split('-');
-  const date = new Date(parseInt(year), parseInt(month) - 1);
-  const monthName = format(date, 'MMMM', { locale: ptBR });
-  return `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+export const formatMonthYear = (dateStr: string | undefined | null) => {
+  if (!dateStr) return '';
+  try {
+    const [year, month] = dateStr.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    const monthName = format(date, 'MMMM', { locale: ptBR });
+    return `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+  } catch {
+    return '';
+  }
 };

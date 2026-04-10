@@ -37,7 +37,7 @@ export const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
     })),
     ...customerOrders.map(o => ({
       id: `order-${o.id}`,
-      date: o.createdAt.split('T')[0],
+      date: o.createdAt?.split('T')[0] || o.entryDate || '',
       type: 'order' as const,
       title: `${o.equipmentBrand} ${o.equipmentModel}`,
       amount: o.totalAmount,

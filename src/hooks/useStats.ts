@@ -27,7 +27,7 @@ export const useStats = () => {
         supabase.from('transactions').select('amount', { count: 'exact' }).eq('type', 'income'),
         supabase.from('transactions').select('amount', { count: 'exact' }).eq('type', 'expense'),
         supabase.from('client_payments').select('id', { count: 'exact' }).neq('status', 'paid'),
-        supabase.from('service_orders').select('id', { count: 'exact' }).or('status.neq.Concluído,status.neq.Entregue,status.neq.Cancelado')
+        supabase.from('service_orders').select('id').or('status.neq.Concluído,status.neq.Entregue,status.neq.Cancelado')
       ]);
 
       const totalIncome = incomeResult.data?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;

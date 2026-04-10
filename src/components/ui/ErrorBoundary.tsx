@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface Props {
@@ -11,23 +11,28 @@ interface State {
   error: Error | null;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false,
-    error: null
-  };
+export class ErrorBoundary extends React.Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
 
-  public static getDerivedStateFromError(error: Error): State {
+  public static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
   }
 
+  private handleReload = () => {
+    this.setState({ hasError: false, error: null });
+    window.location.reload();
+  };
+
   private handleReset = () => {
     this.setState({ hasError: false, error: null });
-    window.location.href = '/';
+    window.location.href = '/dashboard';
   };
 
   public render() {
@@ -46,11 +51,11 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="space-y-2">
               <h1 className="text-2xl font-bold tracking-tight text-slate-100">Ops! Algo deu errado</h1>
               <p className="text-slate-400 text-sm leading-relaxed">
-                Ocorreu um erro inesperado na aplicação. Nossa equipe técnica já foi notificada (simulação).
+                Ocorreu um erro inesperado na aplicação.
               </p>
             </div>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {this.state.error && (
               <div className="p-4 bg-black/40 rounded-xl text-left overflow-auto max-h-40 border border-white/5">
                 <code className="text-xs text-rose-400 font-mono break-all">
                   {this.state.error.toString()}
@@ -60,7 +65,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
             <div className="flex flex-col gap-3 pt-4">
               <button
-                onClick={() => window.location.reload()}
+                onClick={this.handleReload}
                 className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <RefreshCw size={18} />
