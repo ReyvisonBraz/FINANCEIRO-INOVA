@@ -1,7 +1,7 @@
-import { apiFetch } from '../lib/apiFetch';
 import { useCallback } from 'react';
 import { User, AuditLog } from '../types';
 import { useAuthStore } from '../store/useAuthStore';
+import { supabase } from '../lib/supabase';
 
 export function useAuth(showToast: (message: string, type: 'success' | 'error') => void) {
   const { 
@@ -18,10 +18,23 @@ export function useAuth(showToast: (message: string, type: 'success' | 'error') 
 
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/users');
-      if (!res.ok) throw new Error('Failed to fetch users');
-      const data = await res.json();
-      setUsers(data);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) throw error;
+      
+      const mapped = (data || []).map((p: any) => ({
+        id: p.id,
+        username: p.username,
+        name: p.name,
+        role: p.role,
+        permissions: p.permissions || [],
+        createdAt: p.created_at
+      }));
+      
+      setUsers(mapped);
     } catch (err) {
       console.error("Failed to fetch users", err);
       showToast('Erro ao carregar usuários.', 'error');
@@ -30,10 +43,26 @@ export function useAuth(showToast: (message: string, type: 'success' | 'error') 
 
   const fetchAuditLogs = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/audit-logs');
-      if (!res.ok) throw new Error('Failed to fetch audit logs');
-      const data = await res.json();
-      setAuditLogs(data);
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('*, user:profiles(name)')
+        .order('timestamp', { ascending: false })
+        .limit(100);
+      
+      if (error) throw error;
+      
+      const mapped = (data || []).map((l: any) => ({
+        id: l.id,
+        userId: l.user_id,
+        userName: l.user?.name,
+        action: l.action,
+        entity: l.entity,
+        entityId: l.entity_id,
+        details: l.details,
+        timestamp: l.timestamp
+      }));
+      
+      setAuditLogs(mapped);
     } catch (err) {
       console.error("Failed to fetch audit logs", err);
       showToast('Erro ao carregar logs de auditoria.', 'error');
@@ -41,26 +70,33 @@ export function useAuth(showToast: (message: string, type: 'success' | 'error') 
   }, [showToast, setAuditLogs]);
 
   const saveUserAPI = useCallback(async (user: Partial<User>, id?: number) => {
-    const url = id ? `/api/users/${id}` : '/api/users';
-    const method = id ? 'PUT' : 'POST';
+    const mapped = {
+      username: user.username,
+      name: user.name,
+      role: user.role,
+      permissions: user.permissions || []
+    };
     
-    const res = await apiFetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(user)
-    });
-    
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => null);
-      throw new Error(errorData?.error || 'Failed to save user');
+    if (id) {
+      const { error } = await supabase
+        .from('profiles')
+        .update(mapped)
+        .eq('id', id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('profiles')
+        .insert([mapped]);
+      if (error) throw error;
     }
-    
-    return await res.json();
   }, []);
 
   const deleteUserAPI = useCallback(async (id: number) => {
-    const res = await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Failed to delete user');
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
   }, []);
 
   return {

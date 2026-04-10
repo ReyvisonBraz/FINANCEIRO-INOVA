@@ -1,7 +1,5 @@
-import { apiFetch } from '../lib/apiFetch';
 import { useState, useEffect, useCallback } from 'react';
-
-const API_BASE = '';
+import { supabase } from '../lib/supabase';
 
 export const useNotifications = (
   _clientPayments: any[],
@@ -16,15 +14,37 @@ export const useNotifications = (
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const res = await apiFetch(`${API_BASE}/api/notifications`);
-      if (!res.ok) return;
-      const data = await res.json();
-      setOverdueDebts(data.payments?.overdue || []);
-      setDueTodayDebts(data.payments?.dueToday || []);
-      setUpcomingDebts(data.payments?.upcoming || []);
-      setOverdueServiceOrders(data.serviceOrders?.overdue || []);
-      setDueTodayServiceOrders(data.serviceOrders?.dueToday || []);
-      setUpcomingServiceOrders(data.serviceOrders?.upcoming || []);
+      const today = new Date().toISOString().split('T')[0];
+      const threeDaysLater = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      const [paymentsResult, ordersResult] = await Promise.all([
+        supabase
+          .from('client_payments')
+          .select('*, customer:customers(first_name, last_name)', { count: 'exact' })
+          .neq('status', 'paid')
+          .order('due_date', { ascending: true }),
+        supabase
+          .from('service_orders')
+          .select('*, customer:customers(first_name, last_name)', { count: 'exact' })
+          .not().eq('status', 'Concluído')
+          .not().eq('status', 'Entregue')
+          .not().eq('status', 'Cancelado')
+          .order('entry_date', { ascending: true })
+      ]);
+
+      if (paymentsResult.data) {
+        const payments = paymentsResult.data;
+        setOverdueDebts(payments.filter((p: any) => p.due_date < today));
+        setDueTodayDebts(payments.filter((p: any) => p.due_date === today));
+        setUpcomingDebts(payments.filter((p: any) => p.due_date > today && p.due_date <= threeDaysLater));
+      }
+
+      if (ordersResult.data) {
+        const orders = ordersResult.data;
+        setOverdueServiceOrders(orders.filter((o: any) => o.analysis_prediction && o.analysis_prediction < today));
+        setDueTodayServiceOrders(orders.filter((o: any) => o.analysis_prediction === today));
+        setUpcomingServiceOrders(orders.filter((o: any) => o.analysis_prediction && o.analysis_prediction > today && o.analysis_prediction <= threeDaysLater));
+      }
     } catch {
       // silently fail — notifications are non-critical
     }
@@ -32,7 +52,7 @@ export const useNotifications = (
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 5 * 60 * 1000); // refresh every 5 min
+    const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
