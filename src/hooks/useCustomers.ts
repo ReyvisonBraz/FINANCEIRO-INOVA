@@ -54,7 +54,7 @@ export const useCustomers = () => {
     }
   }, [customersPage, customerSearchTerm, showToast, setCustomers]);
 
-  const saveCustomerAPI = useCallback(async (customer: Partial<Customer>, id?: number) => {
+  const saveCustomerAPI = useCallback(async (customer: Partial<Customer>, id?: number): Promise<{ id: number } | null> => {
     const mapped = {
       first_name: customer.firstName,
       last_name: customer.lastName,
@@ -74,11 +74,15 @@ export const useCustomers = () => {
         .update(mapped)
         .eq('id', id);
       if (error) throw error;
+      return { id };
     } else {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('customers')
-        .insert([mapped]);
+        .insert([mapped])
+        .select('id')
+        .single();
       if (error) throw error;
+      return data ? { id: data.id } : null;
     }
   }, []);
 

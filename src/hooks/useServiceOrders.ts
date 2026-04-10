@@ -144,7 +144,7 @@ export const useServiceOrders = () => {
     }
   }, [setModels]);
 
-  const saveServiceOrderAPI = useCallback(async (order: any, id?: number) => {
+  const saveServiceOrderAPI = useCallback(async (order: any, id?: number): Promise<{ id: number } | null> => {
     const mapped = {
       customer_id: order.customerId,
       equipment_type: order.equipmentType,
@@ -180,11 +180,15 @@ export const useServiceOrders = () => {
         .update(mapped)
         .eq('id', id);
       if (error) throw error;
+      return { id };
     } else {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('service_orders')
-        .insert([mapped]);
+        .insert([mapped])
+        .select('id')
+        .single();
       if (error) throw error;
+      return data ? { id: data.id } : null;
     }
   }, []);
 

@@ -39,7 +39,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         if (profile) {
           const user: User = {
-            id: data.user.id,
+            id: Number(data.user.id),
             username: profile.username || data.user.email?.split('@')[0] || '',
             name: profile.name,
             role: profile.role,

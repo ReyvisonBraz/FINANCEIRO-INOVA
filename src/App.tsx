@@ -141,7 +141,7 @@ export default function App() {
         
         if (profile) {
           login({
-            id: session.user.id,
+            id: Number(session.user.id),
             username: profile.username || session.user.email?.split('@')[0] || '',
             name: profile.name,
             role: profile.role,
