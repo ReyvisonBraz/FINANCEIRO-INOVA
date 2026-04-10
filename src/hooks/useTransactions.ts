@@ -1,9 +1,9 @@
-import { apiFetch } from '../lib/apiFetch';
 import { useState, useCallback, useMemo } from 'react';
 import { Transaction } from '../types';
 import { useFilterStore } from '../store/useFilterStore';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { format, endOfMonth, parseISO } from 'date-fns';
+import { supabase } from '../lib/supabase';
 
 export function useTransactions(showToast: (message: string, type: 'success' | 'error') => void) {
   const { 
@@ -20,28 +20,48 @@ export function useTransactions(showToast: (message: string, type: 'success' | '
   const fetchTransactions = useCallback(async (page: number, search: string) => {
     setIsLoading(true);
     try {
-      let url = `/api/transactions?page=${page}&limit=20&search=${encodeURIComponent(search)}`;
-      
-      if (filterType !== 'all') url += `&type=${filterType}`;
-      if (filterCategory !== 'all') url += `&category=${encodeURIComponent(filterCategory)}`;
-      
-      if (dateFilterMode === 'day') {
-        url += `&startDate=${selectedDate}&endDate=${selectedDate}`;
-      } else if (dateFilterMode === 'month') {
-        const start = `${selectedMonth}-01`;
-        const end = format(endOfMonth(parseISO(`${selectedMonth}-01`)), 'yyyy-MM-dd');
-        url += `&startDate=${start}&endDate=${end}`;
-      } else if (dateFilterMode === 'range') {
-        url += `&startDate=${startDate}&endDate=${endDate}`;
+      let query = supabase
+        .from('transactions')
+        .select('*', { count: 'exact' })
+        .order('date', { ascending: false })
+        .range((page - 1) * 20, page * 20 - 1);
+
+      if (search) {
+        query = query.or(`description.ilike.%${search}%,category.ilike.%${search}%`);
       }
       
-      if (filterMinAmount) url += `&minAmount=${filterMinAmount}`;
-      if (filterMaxAmount) url += `&maxAmount=${filterMaxAmount}`;
+      if (filterType && filterType !== 'all') {
+        query = query.eq('type', filterType);
+      }
+      
+      if (filterCategory && filterCategory !== 'all') {
+        query = query.eq('category', filterCategory);
+      }
+      
+      if (dateFilterMode === 'day' && selectedDate) {
+        query = query.eq('date', selectedDate);
+      } else if (dateFilterMode === 'month' && selectedMonth) {
+        query = query.gte('date', `${selectedMonth}-01`).lte('date', format(endOfMonth(parseISO(`${selectedMonth}-01`)), 'yyyy-MM-dd'));
+      } else if (dateFilterMode === 'range' && startDate && endDate) {
+        query = query.gte('date', startDate).lte('date', endDate);
+      }
+      
+      if (filterMinAmount) {
+        query = query.gte('amount', filterMinAmount);
+      }
+      
+      if (filterMaxAmount) {
+        query = query.lte('amount', filterMaxAmount);
+      }
 
-      const res = await apiFetch(url);
-      if (!res.ok) throw new Error('Failed to fetch transactions');
-      const data = await res.json();
-      setTransactions(data);
+      const { data, error, count } = await query;
+      
+      if (error) throw error;
+      
+      setTransactions({ 
+        data: data || [], 
+        meta: { total: count || 0, page, limit: 20, totalPages: Math.ceil((count || 0) / 20) }
+      });
     } catch (err) {
       console.error("Failed to fetch transactions", err);
       showToast('Erro ao carregar transações.', 'error');
@@ -55,26 +75,37 @@ export function useTransactions(showToast: (message: string, type: 'success' | '
   ]);
 
   const saveTransactionAPI = useCallback(async (transaction: Partial<Transaction>, id?: number) => {
-    const url = id ? `/api/transactions/${id}` : '/api/transactions';
-    const method = id ? 'PUT' : 'POST';
+    const mapped = {
+      description: transaction.description,
+      category: transaction.category,
+      type: transaction.type,
+      amount: transaction.amount,
+      date: transaction.date,
+      status: transaction.status || 'Concluído',
+      created_by: transaction.createdBy,
+      updated_by: transaction.updatedBy
+    };
     
-    const res = await apiFetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(transaction)
-    });
-    
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => null);
-      throw new Error(errorData?.error || 'Failed to save transaction');
+    if (id) {
+      const { error } = await supabase
+        .from('transactions')
+        .update(mapped)
+        .eq('id', id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('transactions')
+        .insert([mapped]);
+      if (error) throw error;
     }
-    
-    return await res.json();
   }, []);
 
   const deleteTransactionAPI = useCallback(async (id: number) => {
-    const res = await apiFetch(`/api/transactions/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Failed to delete transaction');
+    const { error } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
   }, []);
 
   const handleDuplicateTransaction = useCallback(async (tx: Transaction) => {

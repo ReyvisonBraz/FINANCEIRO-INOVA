@@ -1,8 +1,7 @@
-import { apiFetch } from '../lib/apiFetch';
 import { useCallback } from 'react';
-import { ServiceOrder, ServiceOrderStatus, Brand, Model } from '../types';
 import { useServiceOrderStore } from '../store/useServiceOrderStore';
 import { useFilterStore } from '../store/useFilterStore';
+import { supabase } from '../lib/supabase';
 
 export const useServiceOrders = () => {
   const {
@@ -23,7 +22,6 @@ export const useServiceOrders = () => {
   } = useFilterStore();
 
   const fetchServiceOrders = useCallback(async (page?: number, search?: string, status?: string, priority?: string, sortBy?: string, dateFilter?: string) => {
-    // Use provided values or fall back to store values
     const targetPage = page !== undefined ? page : serviceOrdersPage;
     const targetSearch = search !== undefined ? search : osSearchTerm;
     const targetStatus = status !== undefined ? status : osStatusFilter;
@@ -32,44 +30,75 @@ export const useServiceOrders = () => {
     const targetDateFilter = dateFilter !== undefined ? dateFilter : osDateFilter;
 
     try {
-      const query = new URLSearchParams({
-        page: targetPage.toString(),
-        limit: '20',
-        search: targetSearch,
-        status: targetStatus,
-        priority: targetPriority,
-        sortBy: targetSortBy,
-        dateFilter: targetDateFilter
-      });
+      let query = supabase
+        .from('service_orders')
+        .select(`
+          *,
+          customer:customers(id, first_name, last_name, phone)
+        `, { count: 'exact' })
+        .range((targetPage - 1) * 20, targetPage * 20 - 1);
 
-      const res = await apiFetch(`/api/service-orders?${query.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setServiceOrders(data);
+      if (targetSearch) {
+        query = query.or(
+          `id.ilike.%${targetSearch}%,equipment_brand.ilike.%${targetSearch}%,equipment_model.ilike.%${targetSearch}%,equipment_type.ilike.%${targetSearch}%,customer.first_name.ilike.%${targetSearch}%,customer.last_name.ilike.%${targetSearch}%`
+        );
       }
+
+      if (targetStatus && targetStatus !== 'all') {
+        query = query.eq('status', targetStatus);
+      }
+
+      if (targetPriority && targetPriority !== 'all') {
+        query = query.eq('priority', targetPriority);
+      }
+
+      if (targetSortBy === 'oldest') {
+        query = query.order('created_at', { ascending: true });
+      } else if (targetSortBy === 'priority') {
+        query = query.order('priority', { ascending: true }).order('created_at', { ascending: false });
+      } else if (targetSortBy === 'prediction') {
+        query = query.order('analysis_prediction', { ascending: true }).order('created_at', { ascending: false });
+      } else {
+        query = query.order('created_at', { ascending: false });
+      }
+
+      const { data, error, count } = await query;
+      
+      if (error) throw error;
+      
+      const mapped = (data || []).map((o: any) => ({
+        ...o,
+        id: o.id,
+        customerId: o.customer_id,
+        firstName: o.customer?.first_name,
+        lastName: o.customer?.last_name,
+        phone: o.customer?.phone
+      }));
+      
+      setServiceOrders({ 
+        data: mapped, 
+        meta: { 
+          total: count || 0, 
+          page: targetPage, 
+          limit: 20, 
+          totalPages: Math.ceil((count || 0) / 20),
+          counts: {}
+        }
+      });
     } catch (err) {
       console.error("Failed to fetch service orders", err);
       throw err;
     }
   }, [serviceOrdersPage, osSearchTerm, osStatusFilter, osPriorityFilter, osSortBy, setServiceOrders]);
 
-  // Auto-fetch when page or search term changes
-  // Note: We only do this if we are authenticated, but the hook doesn't know about auth.
-  // So we'll rely on the caller or just let it fetch (server will return 401 if not auth).
-  // Actually, it's better to keep the fetch in App.tsx or the page component to have more control.
-  // But let's add it here to ensure it's always up to date when used.
-  // React.useEffect(() => {
-  //   fetchServiceOrders();
-  // }, [fetchServiceOrders]);
-  // Wait, I'll use the one in App.tsx and ServiceOrdersPage.tsx for now.
-
   const fetchServiceOrderStatuses = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/service-order-statuses');
-      if (res.ok) {
-        const data = await res.json();
-        setServiceOrderStatuses(data);
-      }
+      const { data, error } = await supabase
+        .from('service_order_statuses')
+        .select('*')
+        .order('priority', { ascending: true });
+      if (error) throw error;
+      setServiceOrderStatuses(data || []);
     } catch (err) {
       console.error("Failed to fetch service order statuses", err);
       throw err;
@@ -78,11 +107,12 @@ export const useServiceOrders = () => {
 
   const fetchEquipmentTypes = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/equipment-types');
-      if (res.ok) {
-        const data = await res.json();
-        setEquipmentTypes(data);
-      }
+      const { data, error } = await supabase
+        .from('equipment_types')
+        .select('*')
+        .order('name', { ascending: true });
+      if (error) throw error;
+      setEquipmentTypes(data || []);
     } catch (err) {
       console.error("Failed to fetch equipment types", err);
       throw err;
@@ -91,11 +121,12 @@ export const useServiceOrders = () => {
 
   const fetchBrands = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/brands');
-      if (res.ok) {
-        const data = await res.json();
-        setBrands(data);
-      }
+      const { data, error } = await supabase
+        .from('brands')
+        .select('*')
+        .order('name', { ascending: true });
+      if (error) throw error;
+      setBrands(data || []);
     } catch (err) {
       console.error("Failed to fetch brands", err);
       throw err;
@@ -104,11 +135,12 @@ export const useServiceOrders = () => {
 
   const fetchModels = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/models');
-      if (res.ok) {
-        const data = await res.json();
-        setModels(data);
-      }
+      const { data, error } = await supabase
+        .from('models')
+        .select('*')
+        .order('name', { ascending: true });
+      if (error) throw error;
+      setModels(data || []);
     } catch (err) {
       console.error("Failed to fetch models", err);
       throw err;
@@ -116,81 +148,115 @@ export const useServiceOrders = () => {
   }, [setModels]);
 
   const saveServiceOrderAPI = useCallback(async (order: any, id?: number) => {
-    const url = id ? `/api/service-orders/${id}` : '/api/service-orders';
-    const method = id ? 'PUT' : 'POST';
-    const res = await apiFetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(order)
-    });
+    const mapped = {
+      customer_id: order.customerId,
+      equipment_type: order.equipmentType,
+      equipment_brand: order.equipmentBrand,
+      equipment_model: order.equipmentModel,
+      equipment_color: order.equipmentColor,
+      equipment_serial: order.equipmentSerial,
+      reported_problem: order.reportedProblem,
+      arrival_photo_url: order.arrivalPhotoUrl,
+      arrival_photo_base64: order.arrivalPhotoBase64,
+      status: order.status || 'Aguardando Análise',
+      entry_date: order.entryDate,
+      analysis_prediction: order.analysisPrediction,
+      customer_password: order.customerPassword,
+      accessories: order.accessories,
+      ram_info: order.ramInfo,
+      ssd_info: order.ssdInfo,
+      priority: order.priority || 'medium',
+      technical_analysis: order.technicalAnalysis,
+      services_performed: order.servicesPerformed,
+      services: typeof order.services === 'string' ? order.services : JSON.stringify(order.services || []),
+      parts_used: typeof order.partsUsed === 'string' ? order.partsUsed : JSON.stringify(order.partsUsed || []),
+      service_fee: order.serviceFee,
+      total_amount: order.totalAmount,
+      final_observations: order.finalObservations,
+      created_by: order.createdBy,
+      updated_by: order.updatedBy
+    };
     
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => null);
-      throw new Error(errorData?.error || 'Failed to save service order');
+    if (id) {
+      const { error } = await supabase
+        .from('service_orders')
+        .update(mapped)
+        .eq('id', id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('service_orders')
+        .insert([mapped]);
+      if (error) throw error;
     }
-    
-    return await res.json();
   }, []);
 
   const deleteServiceOrderAPI = useCallback(async (id: number) => {
-    const res = await apiFetch(`/api/service-orders/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Failed to delete service order');
+    const { error } = await supabase
+      .from('service_orders')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
   }, []);
 
   const addServiceOrderStatusAPI = useCallback(async (status: any) => {
-    const res = await apiFetch('/api/service-order-statuses', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(status)
-    });
-    if (!res.ok) throw new Error('Failed to add status');
+    const { error } = await supabase
+      .from('service_order_statuses')
+      .insert([{ name: status.name, color: status.color, priority: status.priority, is_default: status.isDefault ? 1 : 0 }]);
+    if (error) throw error;
   }, []);
 
   const deleteServiceOrderStatusAPI = useCallback(async (id: number) => {
-    const res = await apiFetch(`/api/service-order-statuses/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Failed to delete status');
+    const { error } = await supabase
+      .from('service_order_statuses')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
   }, []);
 
   const addEquipmentTypeAPI = useCallback(async (name: string, icon?: string) => {
-    const res = await apiFetch('/api/equipment-types', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, icon })
-    });
-    if (!res.ok) throw new Error('Failed to add equipment type');
+    const { error } = await supabase
+      .from('equipment_types')
+      .insert([{ name, icon }]);
+    if (error) throw error;
   }, []);
 
   const deleteEquipmentTypeAPI = useCallback(async (id: number) => {
-    const res = await apiFetch(`/api/equipment-types/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Failed to delete equipment type');
+    const { error } = await supabase
+      .from('equipment_types')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
   }, []);
 
   const addBrandAPI = useCallback(async (name: string, equipmentType: string) => {
-    const res = await apiFetch('/api/brands', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, equipmentType })
-    });
-    if (!res.ok) throw new Error('Failed to add brand');
+    const { error } = await supabase
+      .from('brands')
+      .insert([{ name, equipment_type: equipmentType }]);
+    if (error) throw error;
   }, []);
 
   const deleteBrandAPI = useCallback(async (id: number) => {
-    const res = await apiFetch(`/api/brands/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Failed to delete brand');
+    const { error } = await supabase
+      .from('brands')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
   }, []);
 
   const addModelAPI = useCallback(async (brandId: number, name: string) => {
-    const res = await apiFetch('/api/models', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ brandId, name })
-    });
-    if (!res.ok) throw new Error('Failed to add model');
+    const { error } = await supabase
+      .from('models')
+      .insert([{ brand_id: brandId, name }]);
+    if (error) throw error;
   }, []);
 
   const deleteModelAPI = useCallback(async (id: number) => {
-    const res = await apiFetch(`/api/models/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Failed to delete model');
+    const { error } = await supabase
+      .from('models')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
   }, []);
 
   return {

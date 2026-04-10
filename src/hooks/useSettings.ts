@@ -1,6 +1,5 @@
-import { apiFetch } from '../lib/apiFetch';
 import { useCallback } from 'react';
-import { AppSettings } from '../types';
+import { supabase } from '../lib/supabase';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 export function useSettings(showToast: (message: string, type: 'success' | 'error') => void) {
@@ -20,7 +19,7 @@ export function useSettings(showToast: (message: string, type: 'success' | 'erro
     await fetchCategoriesStore();
   }, [fetchCategoriesStore]);
 
-  const saveSettingsAPI = useCallback(async (newSettings: AppSettings) => {
+  const saveSettingsAPI = useCallback(async (newSettings: any) => {
     try {
       await saveSettingsStore(newSettings);
       showToast('Configurações salvas com sucesso!', 'success');
@@ -31,12 +30,11 @@ export function useSettings(showToast: (message: string, type: 'success' | 'erro
 
   const addCategory = useCallback(async (category: any) => {
     try {
-      const res = await apiFetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(category),
-      });
-      if (!res.ok) throw new Error('Failed to add category');
+      const { error } = await supabase
+        .from('categories')
+        .insert([{ name: category.name, type: category.type }]);
+      
+      if (error) throw error;
       fetchCategoriesStore();
     } catch (err) {
       console.error("Failed to add category", err);
@@ -45,10 +43,12 @@ export function useSettings(showToast: (message: string, type: 'success' | 'erro
 
   const deleteCategory = useCallback(async (id: number) => {
     try {
-      const res = await apiFetch(`/api/categories/${id}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete category');
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
       fetchCategoriesStore();
     } catch (err) {
       console.error("Failed to delete category", err);

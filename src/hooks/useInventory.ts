@@ -1,17 +1,20 @@
-import { apiFetch } from '../lib/apiFetch';
 import { useCallback } from 'react';
 import { InventoryItem } from '../types';
 import { useInventoryStore } from '../store/useInventoryStore';
+import { supabase } from '../lib/supabase';
 
 export function useInventory(showToast: (message: string, type: 'success' | 'error') => void) {
   const { inventoryItems, setInventoryItems } = useInventoryStore();
 
   const fetchInventoryItems = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/inventory');
-      if (!res.ok) throw new Error('Failed to fetch inventory');
-      const data = await res.json();
-      setInventoryItems(data);
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) throw error;
+      setInventoryItems(data || []);
     } catch (err) {
       console.error("Failed to fetch inventory", err);
       showToast('Erro ao carregar estoque.', 'error');
@@ -19,26 +22,36 @@ export function useInventory(showToast: (message: string, type: 'success' | 'err
   }, [showToast, setInventoryItems]);
 
   const saveInventoryItemAPI = useCallback(async (item: Partial<InventoryItem>, id?: number) => {
-    const url = id ? `/api/inventory/${id}` : '/api/inventory';
-    const method = id ? 'PUT' : 'POST';
+    const mapped: any = {
+      name: item.name,
+      category: item.category,
+      sku: item.sku,
+      unit_price: item.unitPrice,
+      stock_level: item.stockLevel,
+      created_by: item.createdBy,
+      updated_by: item.updatedBy
+    };
     
-    const res = await apiFetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item)
-    });
-    
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => null);
-      throw new Error(errorData?.error || 'Failed to save inventory item');
+    if (id) {
+      const { error } = await supabase
+        .from('inventory_items')
+        .update(mapped)
+        .eq('id', id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('inventory_items')
+        .insert([mapped]);
+      if (error) throw error;
     }
-    
-    return await res.json();
   }, []);
 
   const deleteInventoryItemAPI = useCallback(async (id: number) => {
-    const res = await apiFetch(`/api/inventory/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Failed to delete inventory item');
+    const { error } = await supabase
+      .from('inventory_items')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
   }, []);
 
   return {
