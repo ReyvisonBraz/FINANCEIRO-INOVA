@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { User } from '../../types';
 import { Wallet, Lock, User as UserIcon, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { supabase } from '../../lib/supabase';
 
 interface LoginProps {
   onLogin: (user: User) => void;
 }
 
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,18 +20,36 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      if (response.ok) {
-        const user = await response.json();
-        onLogin(user);
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Falha no login');
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profile) {
+          const user: User = {
+            id: data.user.id,
+            username: profile.username || data.user.email?.split('@')[0] || '',
+            name: profile.name,
+            role: profile.role,
+            permissions: profile.permissions || [],
+            createdAt: profile.created_at,
+          };
+          onLogin(user);
+        } else {
+          setError('Perfil não encontrado. Execute os scripts SQL no Supabase.');
+        }
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -61,15 +80,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             )}
 
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Usuário</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Email</label>
               <div className="relative">
                 <UserIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input 
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full h-12 bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 text-sm font-medium focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all placeholder:text-slate-600"
-                  placeholder="Digite seu usuário"
+                  placeholder="Digite seu email"
                   required
                 />
               </div>
@@ -104,7 +123,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
         
         <p className="text-center mt-8 text-xs text-slate-600">
-          &copy; {new Date().getFullYear()} Sistema Financeiro Pro. Todos os direitos reservados.
+          © {new Date().getFullYear()} Sistema Financeiro Pro. Todos os direitos reservados.
         </p>
       </div>
     </div>
