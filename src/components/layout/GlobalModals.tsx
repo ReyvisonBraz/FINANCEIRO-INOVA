@@ -53,6 +53,7 @@ export const GlobalModals: React.FC<GlobalModalsProps> = ({
     activeScreen,
     isAdding, setIsAdding,
     isAddingCustomer, setIsAddingCustomer,
+    isSaving,
     customerRegistrationSource,
     isSearchingOS, setIsSearchingOS,
     setDirectOsId, setDirectMode
@@ -96,6 +97,7 @@ export const GlobalModals: React.FC<GlobalModalsProps> = ({
         newCustomer={newCustomer}
         setNewCustomer={setNewCustomer}
         onSave={handleAddCustomer}
+        isSaving={isSaving}
       />
 
       <CustomerWarningModal 
@@ -159,6 +161,7 @@ export const GlobalModals: React.FC<GlobalModalsProps> = ({
         setNewTx={setNewTx}
         categories={categories}
         onSubmit={handleAddTransaction}
+        isSaving={isSaving}
       />
 
       <DeleteConfirmationModal 

@@ -16,6 +16,7 @@ interface AddTransactionModalProps {
   setNewTx: (tx: any) => void;
   categories: any[];
   onSubmit: (e: React.FormEvent) => void;
+  isSaving?: boolean;
 }
 
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
@@ -25,7 +26,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   newTx,
   setNewTx,
   categories,
-  onSubmit
+  onSubmit,
+  isSaving = false
 }) => {
   return (
     <AnimatePresence>
@@ -147,9 +149,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 </button>
                 <button 
                   type="submit"
-                  className="w-full sm:flex-1 bg-primary text-white py-4 sm:py-5 rounded-xl sm:rounded-2xl font-black shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98] text-xs sm:text-sm uppercase tracking-[0.2em]"
+                  disabled={isSaving}
+                  className="w-full sm:flex-1 bg-primary text-white py-4 sm:py-5 rounded-xl sm:rounded-2xl font-black shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98] text-xs sm:text-sm uppercase tracking-[0.2em] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
-                  {editingTransaction ? 'Atualizar Lançamento' : 'Confirmar Lançamento'}
+                  {isSaving ? 'Salvando...' : editingTransaction ? 'Atualizar Lançamento' : 'Confirmar Lançamento'}
                 </button>
               </div>
             </form>
