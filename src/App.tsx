@@ -120,7 +120,8 @@ export default function App() {
     paymentAmount, setPaymentAmount,
     paymentDate, setPaymentDate,
     showHistoryModal, setShowHistoryModal,
-    historyCustomer, setHistoryCustomer
+    historyCustomer, setHistoryCustomer,
+    resetModalStore
   } = useModalStore();
 
   const location = useLocation();
@@ -1011,6 +1012,7 @@ export default function App() {
 
   const handleLogout = () => {
     logout();
+    resetModalStore();
     navigate('/dashboard');
   };
 

@@ -64,6 +64,8 @@ interface ModalState {
   setShowHistoryModal: (show: boolean) => void;
   historyCustomer: Customer | null;
   setHistoryCustomer: (customer: Customer | null) => void;
+
+  resetModalStore: () => void;
 }
 
 export const useModalStore = create<ModalState>((set) => ({
@@ -127,4 +129,22 @@ export const useModalStore = create<ModalState>((set) => ({
   setShowHistoryModal: (show) => set({ showHistoryModal: show }),
   historyCustomer: null,
   setHistoryCustomer: (customer) => set({ historyCustomer: customer }),
+
+  resetModalStore: () => set({
+    showCustomerSuccessModal: false,
+    lastAddedCustomerId: null,
+    confirmModal: { isOpen: false, title: '', message: '', onConfirm: () => {}, type: 'warning' },
+    showPasswordModal: false,
+    isSettingsUnlocked: false,
+    showWarningModal: false,
+    showCustomerWarningModal: false,
+    editingTransaction: null,
+    transactionToDelete: null,
+    editingCustomer: null,
+    customerToDelete: null,
+    clientPaymentToDelete: null,
+    isRecordingPayment: null,
+    showHistoryModal: false,
+    historyCustomer: null,
+  }),
 }));
