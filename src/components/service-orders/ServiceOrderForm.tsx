@@ -116,6 +116,16 @@ export const ServiceOrderForm: React.FC<ServiceOrderFormProps> = ({
     setQuickAddModal({ ...quickAddModal, isOpen: false, value: '' });
   };
 
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isAdding) {
+        setIsAdding(false);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isAdding, setIsAdding]);
+
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
