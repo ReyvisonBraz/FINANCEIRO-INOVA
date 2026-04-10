@@ -50,6 +50,15 @@ export const ServiceOrderCard: React.FC<ServiceOrderCardProps> = ({
   onGeneratePayment
 }) => {
   const isGrid = viewMode === 'grid';
+  
+  const safeFormatDate = (dateStr: string | null | undefined, formatStr: string) => {
+    if (!dateStr) return '-';
+    try {
+      return format(parseISO(dateStr), formatStr, { locale: ptBR });
+    } catch {
+      return '-';
+    }
+  };
 
   return (
     <div key={order.id} className={cn(
@@ -154,7 +163,7 @@ export const ServiceOrderCard: React.FC<ServiceOrderCardProps> = ({
             <div className="text-right hidden md:block">
               <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Entrada</p>
               <p className="text-xs font-bold text-slate-300">
-                {format(parseISO(order.createdAt), "dd MMM yyyy", { locale: ptBR })}
+                {safeFormatDate(order.createdAt, "dd MMM yyyy")}
               </p>
             </div>
           )}
@@ -168,25 +177,24 @@ export const ServiceOrderCard: React.FC<ServiceOrderCardProps> = ({
                 <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Entrada</span>
                 <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-500/5 border border-blue-500/10 text-[10px] text-blue-400 font-bold shadow-sm">
                   <Calendar size={12} />
-                  {order.entryDate ? order.entryDate.split('-').reverse().join('/') : format(parseISO(order.createdAt), 'dd/MM/yy')}
+                  {order.entryDate ? order.entryDate.split('-').reverse().join('/') : safeFormatDate(order.createdAt, 'dd/MM/yy')}
                 </div>
               </div>
             )}
             
-            {visibleColumns.prediction && order.analysisPrediction && (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Previsão</span>
-                <div className={cn(
-                  "flex items-center gap-1.5 px-2 py-1 rounded-lg border shadow-sm text-[10px] font-bold",
-                  new Date(order.analysisPrediction) < new Date() && order.status !== 'Concluído' 
-                    ? "bg-rose-500/5 border-rose-500/10 text-rose-400" 
-                    : "bg-slate-500/5 border-slate-500/10 text-slate-400"
-                )}>
+              {visibleColumns.prediction && order.analysisPrediction && (
+                <div 
+                  className={cn(
+                    "flex items-center gap-1.5 px-2 py-1 rounded-lg border shadow-sm text-[10px] font-bold",
+                    new Date(order.analysisPrediction) < new Date() && order.status !== 'Concluído' 
+                      ? "bg-rose-500/5 border-rose-500/10 text-rose-400" 
+                      : "bg-slate-500/5 border-slate-500/10 text-slate-400"
+                  )}
+                >
                   <Clock size={12} />
-                  {format(parseISO(order.analysisPrediction), 'dd/MM/yy')}
+                  {safeFormatDate(order.analysisPrediction, 'dd/MM/yy')}
                 </div>
-              </div>
-            )}
+              )}
 
             {visibleColumns.total && (
               <div className="flex flex-col gap-0.5">
@@ -228,7 +236,7 @@ export const ServiceOrderCard: React.FC<ServiceOrderCardProps> = ({
           <div className="flex flex-col">
             <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Criado em</span>
             <span className="text-[10px] font-bold text-slate-400">
-              {format(parseISO(order.createdAt), "dd/MM/yy")}
+              {safeFormatDate(order.createdAt, "dd/MM/yy")}
             </span>
           </div>
         )}
