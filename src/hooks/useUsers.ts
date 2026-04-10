@@ -1,25 +1,53 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { User } from '../types';
-import { api } from '../services/api';
+import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { useAuthStore } from '../store/useAuthStore';
 
 export const useUsers = () => {
-  const [users, setUsers] = useState<User[]>([]);
   const { showToast } = useToast();
+  const { users, setUsers } = useAuthStore();
 
   const fetchUsers = useCallback(async () => {
     try {
-      const data = await api.get('/api/users');
-      setUsers(data);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) throw error;
+      
+      const mapped = (data || []).map((p: any) => ({
+        id: p.id,
+        username: p.username,
+        name: p.name,
+        role: p.role,
+        permissions: p.permissions || [],
+        createdAt: p.created_at
+      }));
+      
+      setUsers(mapped);
     } catch (err) {
       console.error("Failed to fetch users", err);
       showToast("Erro ao carregar usuários. Verifique sua conexão.", "error");
     }
-  }, [showToast]);
+  }, [showToast, setUsers]);
 
   const addUser = useCallback(async (user: Omit<User, 'id'>) => {
     try {
-      await api.post('/api/users', user);
+      const mapped = {
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        permissions: user.permissions || []
+      };
+      
+      const { error } = await supabase
+        .from('profiles')
+        .insert([mapped]);
+      
+      if (error) throw error;
+      
       fetchUsers();
       return true;
     } catch (err) {
@@ -31,7 +59,20 @@ export const useUsers = () => {
 
   const updateUser = useCallback(async (id: number, user: Partial<User>) => {
     try {
-      await api.put(`/api/users/${id}`, user);
+      const mapped = {
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        permissions: user.permissions || []
+      };
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update(mapped)
+        .eq('id', id);
+      
+      if (error) throw error;
+      
       fetchUsers();
       return true;
     } catch (err) {
@@ -43,7 +84,13 @@ export const useUsers = () => {
 
   const deleteUser = useCallback(async (id: number) => {
     try {
-      await api.delete(`/api/users/${id}`);
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
       fetchUsers();
       return true;
     } catch (err) {
