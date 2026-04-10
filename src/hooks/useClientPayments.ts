@@ -97,6 +97,14 @@ export function useClientPayments(showToast: (message: string, type: 'success' |
     if (error) throw error;
   }, []);
 
+  const deleteClientPaymentGroupAPI = useCallback(async (saleId: string) => {
+    const { error } = await supabase
+      .from('client_payments')
+      .delete()
+      .eq('sale_id', saleId);
+    if (error) throw error;
+  }, []);
+
   const recordPaymentAPI = useCallback(async (id: number, amount: number, date: string, updatedBy?: number) => {
     const { data: payment, error: fetchError } = await supabase
       .from('client_payments')
@@ -137,6 +145,7 @@ export function useClientPayments(showToast: (message: string, type: 'success' |
     fetchClientPayments,
     saveClientPaymentAPI,
     deleteClientPaymentAPI,
+    deleteClientPaymentGroupAPI,
     recordPaymentAPI
   };
 }

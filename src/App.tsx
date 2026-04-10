@@ -1,4 +1,3 @@
-import { apiFetch } from './lib/apiFetch';
 import { supabase } from './lib/supabase';
 import React, { useEffect, lazy, Suspense } from 'react';
 import { useLocation, useNavigate, Routes, Route, Navigate } from 'react-router-dom';
@@ -252,6 +251,7 @@ export default function App() {
     fetchClientPayments,
     saveClientPaymentAPI,
     deleteClientPaymentAPI,
+    deleteClientPaymentGroupAPI,
     recordPaymentAPI
   } = useClientPayments(showToast);
 
@@ -691,13 +691,10 @@ export default function App() {
       'Deseja excluir todos os lançamentos desta venda agrupada? Esta ação não pode ser desfeita.',
       async () => {
         try {
-          // We need a new endpoint or just loop. Let's add a query param to delete by saleId.
-          const res = await apiFetch(`/api/client-payments/group/${saleId}`, { method: 'DELETE' });
-          if (res.ok) {
-            fetchClientPayments(paymentsPage, paymentSearchTerm);
-            fetchAuditLogs();
-            showToast('Venda excluída com sucesso.', 'success');
-          }
+          await deleteClientPaymentGroupAPI(saleId);
+          fetchClientPayments(paymentsPage, paymentSearchTerm);
+          fetchAuditLogs();
+          showToast('Venda excluída com sucesso.', 'success');
         } catch (err) {
           console.error("Failed to delete client payment group", err);
           showToast('Erro ao excluir venda.', 'error');
