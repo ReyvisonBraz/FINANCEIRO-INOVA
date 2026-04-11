@@ -89,7 +89,7 @@ export function useAuth(showToast?: (message: string, type: 'success' | 'error')
     }
   }, [showToast, setAuditLogs]);
 
-  const saveUserAPI = useCallback(async (user: Partial<User>, id?: number) => {
+  const saveUserAPI = useCallback(async (user: Partial<User>, id?: string | number) => {
     try {
       const mapped = {
         username: user.username,
@@ -116,7 +116,7 @@ export function useAuth(showToast?: (message: string, type: 'success' | 'error')
     }
   }, []);
 
-  const deleteUserAPI = useCallback(async (id: number) => {
+  const deleteUserAPI = useCallback(async (id: string | number) => {
     try {
       const { error } = await supabase
         .from('profiles')
