@@ -32,12 +32,12 @@ export const useServiceOrders = () => {
     try {
       let query = supabase
         .from('service_orders')
-        .select('*')
+        .select('*, customers(first_name, last_name, phone)')
         .range((targetPage - 1) * 20, targetPage * 20 - 1);
 
       if (targetSearch) {
         query = query.or(
-          `id.ilike.%${targetSearch}%,equipment_brand.ilike.%${targetSearch}%,equipment_model.ilike.%${targetSearch}%,equipment_type.ilike.%${targetSearch}%,customer.first_name.ilike.%${targetSearch}%,customer.last_name.ilike.%${targetSearch}%`
+          `id.ilike.%${targetSearch}%,equipment_brand.ilike.%${targetSearch}%,equipment_model.ilike.%${targetSearch}%,equipment_type.ilike.%${targetSearch}%,customers.first_name.ilike.%${targetSearch}%,customers.last_name.ilike.%${targetSearch}%`
         );
       }
 

@@ -45,7 +45,7 @@ export function useAuth(showToast: (message: string, type: 'success' | 'error') 
     try {
       const { data, error } = await supabase
         .from('audit_logs')
-        .select('*, user:profiles(name)')
+        .select('*, profiles(name)')
         .order('timestamp', { ascending: false })
         .limit(100);
       
@@ -54,7 +54,7 @@ export function useAuth(showToast: (message: string, type: 'success' | 'error') 
       const mapped = (data || []).map((l: any) => ({
         id: l.id,
         userId: l.user_id,
-        userName: l.user?.name,
+        userName: l.profiles?.name,
         action: l.action,
         entity: l.entity,
         entityId: l.entity_id,
