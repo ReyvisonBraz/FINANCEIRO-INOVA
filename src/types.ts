@@ -1,5 +1,5 @@
 export interface User {
-  id: number;
+  id: string | number;
   username: string;
   name: string;
   role: 'owner' | 'manager' | 'employee';
@@ -9,7 +9,7 @@ export interface User {
 
 export interface AuditLog {
   id: number;
-  userId: number;
+  userId: string | number;
   userName?: string;
   action: string;
   entity: string;
@@ -27,8 +27,8 @@ export interface Transaction {
   date: string;
   status: string;
   paymentMethod?: string;
-  createdBy?: number;
-  updatedBy?: number;
+  createdBy?: string | number;
+  updatedBy?: string | number;
   paymentId?: number;
   saleId?: string;
   customerName?: string;
@@ -46,8 +46,8 @@ export interface Customer {
   observation?: string;
   creditLimit?: number;
   createdAt: string;
-  createdBy?: number;
-  updatedBy?: number;
+  createdBy?: string | number;
+  updatedBy?: string | number;
 }
 
 export interface ClientPayment {
@@ -64,9 +64,9 @@ export interface ClientPayment {
   type: 'income' | 'expense';
   saleId?: string;
   customerName?: string;
-  paymentHistory?: string; // JSON string of { amount: number, date: string }[]
-  createdBy?: number;
-  updatedBy?: number;
+  paymentHistory?: string;
+  createdBy?: string | number;
+  updatedBy?: string | number;
 }
 
 export interface Category {
@@ -80,9 +80,9 @@ export interface AppSettings {
   appName: string;
   fiscalYear: string;
   primaryColor: string;
-  categories: string; // Comma separated (legacy)
-  incomeCategories: string; // Comma separated
-  expenseCategories: string; // Comma separated
+  categories: string;
+  incomeCategories: string;
+  expenseCategories: string;
   profileName: string;
   profileAvatar: string;
   appVersion: string;
@@ -113,12 +113,12 @@ export interface InventoryItem {
   unitPrice: number;
   stockLevel: number;
   createdAt: string;
-  createdBy?: number;
-  updatedBy?: number;
+  createdBy?: string | number;
+  updatedBy?: string | number;
 }
 
 export interface ServiceOrderPart {
-  id?: number; // Inventory item ID
+  id?: number;
   name: string;
   quantity: number;
   unitPrice: number;
@@ -168,8 +168,8 @@ export interface ServiceOrder {
   ssdInfo?: string;
   priority?: 'low' | 'medium' | 'high';
   createdAt: string;
-  createdBy?: number;
-  updatedBy?: number;
+  createdBy?: string | number;
+  updatedBy?: string | number;
 }
 
 export interface EquipmentType {

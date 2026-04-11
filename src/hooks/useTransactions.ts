@@ -58,8 +58,22 @@ export function useTransactions(showToast: (message: string, type: 'success' | '
       
       if (error) throw error;
       
+      const mapped = (data || []).map((t: any) => ({
+        id: t.id,
+        description: t.description,
+        category: t.category,
+        type: t.type,
+        amount: t.amount,
+        date: t.date,
+        status: t.status,
+        paymentId: t.payment_id,
+        saleId: t.sale_id,
+        createdBy: t.created_by,
+        updatedBy: t.updated_by
+      }));
+      
       setTransactions({ 
-        data: data || [], 
+        data: mapped, 
         meta: { total: count || 0, page, limit: 20, totalPages: Math.ceil((count || 0) / 20) }
       });
     } catch (err) {

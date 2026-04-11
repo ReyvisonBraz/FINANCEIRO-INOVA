@@ -14,7 +14,20 @@ export function useInventory(showToast: (message: string, type: 'success' | 'err
         .order('name', { ascending: true });
       
       if (error) throw error;
-      setInventoryItems(data || []);
+      
+      const mapped = (data || []).map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        sku: item.sku,
+        unitPrice: item.unit_price,
+        stockLevel: item.stock_level,
+        createdAt: item.created_at,
+        createdBy: item.created_by,
+        updatedBy: item.updated_by
+      }));
+      
+      setInventoryItems(mapped);
     } catch (err) {
       console.error("Failed to fetch inventory", err);
       showToast('Erro ao carregar estoque.', 'error');

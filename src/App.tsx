@@ -709,7 +709,18 @@ export default function App() {
 
     const amount = parseFloat(paymentAmount.toString().replace(',', '.'));
 
-    const [y, m, d] = paymentDate.split('-');
+    if (!paymentDate) {
+      showToast('Data do pagamento não definida.', 'error');
+      return;
+    }
+
+    const dateParts = paymentDate.split('-');
+    if (dateParts.length !== 3) {
+      showToast('Data do pagamento inválida.', 'error');
+      return;
+    }
+
+    const [y, m, d] = dateParts;
     const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
     const now = new Date();
     dateObj.setHours(now.getHours(), now.getMinutes(), now.getSeconds());

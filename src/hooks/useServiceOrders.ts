@@ -64,12 +64,37 @@ export const useServiceOrders = () => {
       if (error) throw error;
       
       const mapped = (data || []).map((o: any) => ({
-        ...o,
         id: o.id,
         customerId: o.customer_id,
         firstName: o.customer?.first_name,
         lastName: o.customer?.last_name,
-        phone: o.customer?.phone
+        phone: o.customer?.phone,
+        equipmentType: o.equipment_type,
+        equipmentBrand: o.equipment_brand,
+        equipmentModel: o.equipment_model,
+        equipmentColor: o.equipment_color,
+        equipmentSerial: o.equipment_serial,
+        reportedProblem: o.reported_problem,
+        arrivalPhotoUrl: o.arrival_photo_url,
+        arrivalPhotoBase64: o.arrival_photo_base64,
+        status: o.status,
+        technicalAnalysis: o.technical_analysis,
+        servicesPerformed: o.services_performed,
+        services: typeof o.services === 'string' ? JSON.parse(o.services || '[]') : (o.services || []),
+        partsUsed: typeof o.parts_used === 'string' ? JSON.parse(o.parts_used || '[]') : (o.parts_used || []),
+        serviceFee: o.service_fee,
+        totalAmount: o.total_amount,
+        finalObservations: o.final_observations,
+        entryDate: o.entry_date,
+        analysisPrediction: o.analysis_prediction,
+        customerPassword: o.customer_password,
+        accessories: o.accessories,
+        ramInfo: o.ram_info,
+        ssdInfo: o.ssd_info,
+        priority: o.priority,
+        createdAt: o.created_at,
+        createdBy: o.created_by,
+        updatedBy: o.updated_by
       }));
       
       setServiceOrders({ 

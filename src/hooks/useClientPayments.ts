@@ -44,7 +44,9 @@ export function useClientPayments(showToast: (message: string, type: 'success' |
         type: p.type,
         saleId: p.sale_id,
         paymentHistory: p.payment_history,
-        customerName: p.customer ? `${p.customer.first_name} ${p.customer.last_name}` : ''
+        customerName: p.customer ? `${p.customer.first_name} ${p.customer.last_name}` : '',
+        createdBy: p.created_by,
+        updatedBy: p.updated_by
       }));
       
       setClientPayments({ 
@@ -105,7 +107,7 @@ export function useClientPayments(showToast: (message: string, type: 'success' |
     if (error) throw error;
   }, []);
 
-  const recordPaymentAPI = useCallback(async (id: number, amount: number, date: string, updatedBy?: number) => {
+  const recordPaymentAPI = useCallback(async (id: number, amount: number, date: string, updatedBy?: string | number) => {
     const { data: payment, error: fetchError } = await supabase
       .from('client_payments')
       .select('paid_amount, payment_history, total_amount')
