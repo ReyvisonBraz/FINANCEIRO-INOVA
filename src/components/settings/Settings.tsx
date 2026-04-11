@@ -22,8 +22,8 @@ interface SettingsProps {
   onDeleteCategory: (id: number) => void;
   users: UserType[];
   onAddUser: (user: Omit<UserType, 'id'>) => void;
-  onUpdateUser: (id: number, user: Partial<UserType>) => void;
-  onDeleteUser: (id: number) => void;
+  onUpdateUser: (id: string | number, user: Partial<UserType>) => void;
+  onDeleteUser: (id: string | number) => void;
   auditLogs: any[];
 }
 
