@@ -260,16 +260,34 @@ export const ServiceOrdersPage: React.FC = () => {
         await fetchServiceOrderStatuses();
       }}
       onAddEquipmentType={async (name, icon) => {
-        await addEquipmentTypeAPI(name, icon);
-        await fetchEquipmentTypes();
+        try {
+          await addEquipmentTypeAPI(name, icon);
+          await fetchEquipmentTypes();
+          showToast('Tipo de equipamento adicionado!', 'success');
+        } catch (err) {
+          console.error('Erro ao adicionar tipo:', err);
+          showToast('Erro ao adicionar tipo de equipamento.', 'error');
+        }
       }}
       onAddBrand={async (name, equipmentType) => {
-        await addBrandAPI(name, equipmentType);
-        await fetchBrands();
+        try {
+          await addBrandAPI(name, equipmentType);
+          await fetchBrands();
+          showToast('Marca adicionada!', 'success');
+        } catch (err) {
+          console.error('Erro ao adicionar marca:', err);
+          showToast('Erro ao adicionar marca.', 'error');
+        }
       }}
       onAddModel={async (brandId, name) => {
-        await addModelAPI(brandId, name);
-        await fetchModels();
+        try {
+          await addModelAPI(brandId, name);
+          await fetchModels();
+          showToast('Modelo adicionado!', 'success');
+        } catch (err) {
+          console.error('Erro ao adicionar modelo:', err);
+          showToast('Erro ao adicionar modelo.', 'error');
+        }
       }}
       onPrintBlankForm={() => {
         printBlankForm(settings);

@@ -92,6 +92,7 @@ export function useAuth(showToast?: (message: string, type: 'success' | 'error')
   const saveUserAPI = useCallback(async (user: Partial<User>, id?: string | number) => {
     try {
       const mapped = {
+        id: id || crypto.randomUUID(),
         username: user.username,
         name: user.name,
         role: user.role || 'employee',

@@ -103,23 +103,27 @@ const Settings: React.FC<SettingsProps> = ({
     }
   };
 
-  const handleSaveUser = () => {
-    if (!userForm.username || !userForm.name || (!editingUser && !userForm.password)) {
+  const handleSaveUser = async () => {
+    if (!userForm.username || !userForm.name) {
       showToast('Preencha todos os campos obrigatórios!', 'warning');
       return;
     }
 
-    if (editingUser) {
-      onUpdateUser(editingUser.id, userForm);
-      showToast('Usuário atualizado!', 'success');
-    } else {
-      onAddUser(userForm);
-      showToast('Usuário adicionado!', 'success');
+    try {
+      if (editingUser) {
+        await onUpdateUser(editingUser.id, userForm);
+        showToast('Usuário atualizado!', 'success');
+      } else {
+        await onAddUser(userForm);
+        showToast('Usuário adicionado!', 'success');
+      }
+      setIsAddingUser(false);
+      setEditingUser(null);
+      setUserForm({ username: '', password: '', name: '', role: 'employee', permissions: [], createdAt: new Date().toISOString() });
+    } catch (err) {
+      console.error('Erro ao salvar usuário:', err);
+      showToast('Erro ao salvar usuário. Verifique se não existe outro usuário com este nome.', 'error');
     }
-
-    setIsAddingUser(false);
-    setEditingUser(null);
-    setUserForm({ username: '', password: '', name: '', role: 'employee', permissions: [], createdAt: new Date().toISOString() });
   };
 
   return (
