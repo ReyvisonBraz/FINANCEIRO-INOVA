@@ -8,13 +8,15 @@ import { supabase } from '../lib/supabase';
 export const useCustomers = () => {
   const { 
     customers, setCustomers, 
-    customersPage, setCustomersPage
+    customersPage, setCustomersPage,
+    isLoading, setIsLoading
   } = useCustomerStore();
   const { customerSearchTerm, setCustomerSearchTerm } = useFilterStore();
   const { showToast } = useToast();
 
   const fetchCustomers = useCallback(async () => {
     try {
+      setIsLoading(true);
       let query = supabase
         .from('customers')
         .select('*', { count: 'exact' })
@@ -41,7 +43,10 @@ export const useCustomers = () => {
         phone: c.phone,
         observation: c.observation,
         creditLimit: c.credit_limit,
-        createdAt: c.created_at
+        createdAt: c.created_at,
+        createdBy: c.created_by,
+        updatedBy: c.updated_by,
+        updatedAt: c.updated_at
       }));
       
       setCustomers({ 
@@ -51,24 +56,26 @@ export const useCustomers = () => {
     } catch (err) {
       console.error("Failed to fetch customers", err);
       showToast('Erro ao carregar clientes.', 'error');
+    } finally {
+      setIsLoading(false);
     }
-  }, [customersPage, customerSearchTerm, showToast, setCustomers]);
+  }, [customersPage, customerSearchTerm, showToast, setCustomers, setIsLoading]);
 
   const saveCustomerAPI = useCallback(async (customer: Partial<Customer>, id?: number): Promise<{ id: number } | null> => {
     const mapped = {
       first_name: customer.firstName,
       last_name: customer.lastName,
-      nickname: customer.nickname,
-      cpf: customer.cpf,
-      company_name: customer.companyName,
+      nickname: customer.nickname || null,
+      cpf: customer.cpf || null,
+      company_name: customer.companyName || null,
       phone: customer.phone,
-      observation: customer.observation,
-      credit_limit: customer.creditLimit,
-      created_by: customer.createdBy,
-      updated_by: customer.updatedBy
+      observation: customer.observation || null,
+      credit_limit: customer.creditLimit || 0,
+      updated_at: new Date().toISOString()
     };
     
     if (id) {
+      mapped['updated_by'] = customer.updatedBy;
       const { error } = await supabase
         .from('customers')
         .update(mapped)
@@ -76,6 +83,7 @@ export const useCustomers = () => {
       if (error) throw error;
       return { id };
     } else {
+      mapped['created_by'] = customer.createdBy;
       const { data, error } = await supabase
         .from('customers')
         .insert([mapped])
@@ -107,6 +115,7 @@ export const useCustomers = () => {
     customers, 
     customersPage,
     setCustomersPage,
+    isLoading,
     customerSearchTerm,
     setCustomerSearchTerm,
     fetchCustomers, 

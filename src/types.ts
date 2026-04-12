@@ -48,6 +48,7 @@ export interface Customer {
   createdAt: string;
   createdBy?: string | number;
   updatedBy?: string | number;
+  updatedAt?: string;
 }
 
 export interface ClientPayment {

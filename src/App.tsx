@@ -532,7 +532,6 @@ export default function App() {
         fetchAuditLogs();
 
         if (!editingCustomer) {
-          // Use a small delay to ensure the modal is closed before showing the confirm
           setTimeout(() => {
             if (customerRegistrationSource === 'customers') {
               setLastAddedCustomerId(data.id);
@@ -543,6 +542,8 @@ export default function App() {
               setNewClientPayment({ ...newClientPayment, customerId: data.id });
             }
           }, 500);
+        } else {
+          showToast('Cliente atualizado com sucesso!', 'success');
         }
       } catch (err: any) {
         console.error("Failed to add customer", err);
