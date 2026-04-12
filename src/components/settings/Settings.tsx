@@ -111,9 +111,14 @@ const Settings: React.FC<SettingsProps> = ({
     { id: 'audit', label: 'Auditoria', icon: Database },
   ];
 
-  const handleUpdatePassword = () => {
-    onUpdateSettings({ settingsPassword: localPassword });
-    showToast('Senha de configurações atualizada!', 'success');
+  const handleUpdatePassword = async () => {
+    try {
+      await onUpdateSettings({ settingsPassword: localPassword });
+      showToast('Senha de configurações atualizada!', 'success');
+    } catch (err) {
+      console.error('Erro ao atualizar senha:', err);
+      showToast('Erro ao atualizar senha.', 'error');
+    }
   };
 
   const handleCheckUpdate = async () => {
@@ -266,11 +271,16 @@ const Settings: React.FC<SettingsProps> = ({
                     <option value="expense">Saída</option>
                   </select>
                   <button 
-                    onClick={() => {
+                    onClick={async () => {
                       if (newCategoryName) {
-                        onAddCategory(newCategoryName, newCategoryType);
-                        setNewCategoryName('');
-                        showToast('Categoria adicionada!', 'success');
+                        try {
+                          await onAddCategory(newCategoryName, newCategoryType);
+                          setNewCategoryName('');
+                          showToast('Categoria adicionada!', 'success');
+                        } catch (err) {
+                          console.error('Erro ao adicionar categoria:', err);
+                          showToast('Erro ao adicionar categoria.', 'error');
+                        }
                       }
                     }}
                     className="px-6 h-12 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all"
@@ -343,7 +353,19 @@ const Settings: React.FC<SettingsProps> = ({
                     />
                   </div>
                   <button 
-                    onClick={() => showToast('Configurações de WhatsApp salvas!', 'success')}
+                    onClick={async () => {
+                      try {
+                        await onUpdateSettings({ 
+                          sendPulseClientId: settings.sendPulseClientId,
+                          sendPulseClientSecret: settings.sendPulseClientSecret,
+                          sendPulseTemplateId: settings.sendPulseTemplateId
+                        });
+                        showToast('Configurações de WhatsApp salvas!', 'success');
+                      } catch (err) {
+                        console.error('Erro ao salvar WhatsApp settings:', err);
+                        showToast('Erro ao salvar configurações.', 'error');
+                      }
+                    }}
                     className="w-full h-12 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
                   >
                     Salvar Configurações API
