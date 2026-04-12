@@ -1,25 +1,45 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-console.log('[Supabase] Inicializando cliente...');
 console.log('[Supabase] URL:', supabaseUrl ? '✅ Definida' : '❌ UNDEFINED');
 console.log('[Supabase] ANON_KEY:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : '❌ UNDEFINED');
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('[Supabase] ❌ ERRO: Variáveis de ambiente VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY não estão definidas!');
-  console.error('[Supabase] Isso explicará os erros "Erro ao carregar" no browser.');
-  console.error('[Supabase] Para corrigir, configure as Environment Variables na Vercel:');
-  console.error('[Supabase]   Settings > Environment Variables');
-  console.error('[Supabase]   Adicione:');
-  console.error('[Supabase]   - VITE_SUPABASE_URL = sua_url_do_supabase');
-  console.error('[Supabase]   - VITE_SUPABASE_ANON_KEY = sua_chave_anon');
+  console.error('[Supabase] ❌ ERRO: Variáveis não definidas!');
+  console.error('[Supabase] Configure no Vercel: Settings > Environment Variables');
 }
 
-export const supabase = createClient(
+export const supabase: SupabaseClient = createClient(
   supabaseUrl || 'https://placeholder.supabase.co', 
-  supabaseAnonKey || 'placeholder-key'
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+    global: {
+      fetch: (url, options) => {
+        const start = Date.now();
+        console.log(`[Supabase] 🌐 REQUEST: ${url}`, { options });
+        return fetch(url, options)
+          .then(response => {
+            const duration = Date.now() - start;
+            console.log(`[Supabase] ✅ RESPONSE: ${url} (${duration}ms)`, { 
+              status: response.status, 
+              statusText: response.statusText 
+            });
+            return response;
+          })
+          .catch(error => {
+            const duration = Date.now() - start;
+            console.error(`[Supabase] ❌ ERROR: ${url} (${duration}ms)`, error);
+            throw error;
+          });
+      }
+    }
+  }
 );
 
-console.log('[Supabase] Cliente criado com sucesso');
+console.log('[Supabase] ✅ Cliente inicializado');

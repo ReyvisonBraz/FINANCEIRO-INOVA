@@ -17,6 +17,8 @@ export const useCustomers = () => {
   const fetchCustomers = useCallback(async () => {
     try {
       setIsLoading(true);
+      console.log('[useCustomers] 🔄 Fetching customers...', { customersPage, customerSearchTerm });
+      
       let query = supabase
         .from('customers')
         .select('*', { count: 'exact' })
@@ -31,7 +33,14 @@ export const useCustomers = () => {
 
       const { data, error, count } = await query;
       
-      if (error) throw error;
+      console.log('[useCustomers] 📦 Raw response:', { error, count, dataLength: data?.length });
+      
+      if (error) {
+        console.error('[useCustomers] ❌ Query error:', error);
+        throw error;
+      }
+      
+      console.log('[useCustomers] ✅ Success:', data?.length, 'customers fetched');
       
       const mapped = (data || []).map(c => ({
         id: c.id,
@@ -62,6 +71,7 @@ export const useCustomers = () => {
   }, [customersPage, customerSearchTerm, showToast, setCustomers, setIsLoading]);
 
   const saveCustomerAPI = useCallback(async (customer: Partial<Customer>, id?: number): Promise<{ id: number } | null> => {
+    console.log('[useCustomers] 💾 Saving customer:', { customer, id });
     const mapped = {
       first_name: customer.firstName,
       last_name: customer.lastName,
