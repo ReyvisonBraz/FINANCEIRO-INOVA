@@ -10,6 +10,7 @@ import { cn } from '../../lib/utils';
 import { AppSettings, Category, User as UserType } from '../../types';
 import AuditLogs from '../audit/AuditLogs';
 import { useToast } from '../ui/Toast';
+import { ConfirmModal } from '../ui/ConfirmModal';
 
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -59,6 +60,46 @@ const Settings: React.FC<SettingsProps> = ({
     message: 'Sistema atualizado. Nenhuma ação necessária no momento.'
   });
   const { showToast } = useToast();
+
+  const [deleteConfirm, setDeleteConfirm] = React.useState<{
+    isOpen: boolean;
+    type: 'user' | 'category';
+    id: number | string;
+    name: string;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    type: 'user',
+    id: '',
+    name: '',
+    isDeleting: false
+  });
+
+  const handleDeleteUser = (id: string | number, name: string) => {
+    setDeleteConfirm({ isOpen: true, type: 'user', id, name, isDeleting: false });
+  };
+
+  const handleDeleteCategory = (id: number, name: string) => {
+    setDeleteConfirm({ isOpen: true, type: 'category', id, name, isDeleting: false });
+  };
+
+  const confirmDelete = async () => {
+    setDeleteConfirm(prev => ({ ...prev, isDeleting: true }));
+    try {
+      if (deleteConfirm.type === 'user') {
+        await onDeleteUser(deleteConfirm.id);
+        showToast('Usuário removido com sucesso!', 'success');
+      } else {
+        onDeleteCategory(deleteConfirm.id as number);
+        showToast('Categoria removida com sucesso!', 'success');
+      }
+      setDeleteConfirm({ isOpen: false, type: 'user', id: '', name: '', isDeleting: false });
+    } catch (err) {
+      console.error('Erro ao deletar:', err);
+      showToast('Erro ao remover. Tente novamente.', 'error');
+      setDeleteConfirm(prev => ({ ...prev, isDeleting: false }));
+    }
+  };
 
   const tabs = [
     { id: 'general', label: 'Geral', icon: SettingsIcon },
@@ -249,10 +290,7 @@ const Settings: React.FC<SettingsProps> = ({
                         <span className="text-sm font-bold">{cat.name}</span>
                       </div>
                       <button 
-                        onClick={() => {
-                          onDeleteCategory(cat.id);
-                          showToast('Categoria removida!', 'info');
-                        }}
+                        onClick={() => handleDeleteCategory(cat.id, cat.name)}
                         className="p-2 text-slate-500 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
                       >
                         <Trash2 size={16} />
@@ -424,7 +462,7 @@ const Settings: React.FC<SettingsProps> = ({
                             <Edit2 size={16} />
                           </button>
                           <button 
-                            onClick={() => onDeleteUser(user.id)}
+                            onClick={() => handleDeleteUser(user.id, user.name)}
                             className="p-2 text-slate-500 hover:text-rose-500 transition-all"
                           >
                             <Trash2 size={16} />
@@ -527,6 +565,18 @@ const Settings: React.FC<SettingsProps> = ({
           </motion.div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDelete}
+        title={deleteConfirm.type === 'user' ? 'Excluir Usuário' : 'Excluir Categoria'}
+        message={`Tem certeza que deseja excluir "${deleteConfirm.name}"? Esta ação não pode ser desfeita.`}
+        type="danger"
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        isLoading={deleteConfirm.isDeleting}
+      />
     </div>
   );
 };

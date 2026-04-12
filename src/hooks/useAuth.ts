@@ -105,17 +105,20 @@ export function useAuth(showToast?: (message: string, type: 'success' | 'error')
           .update(mapped)
           .eq('id', id);
         if (error) throw error;
+        if (showToast) showToast('Usuário atualizado com sucesso!', 'success');
       } else {
         const { error } = await supabase
           .from('profiles')
           .insert([mapped]);
         if (error) throw error;
+        if (showToast) showToast('Usuário criado com sucesso!', 'success');
       }
     } catch (err) {
       console.error('[useAuth] saveUserAPI error:', err);
+      if (showToast) showToast('Erro ao salvar usuário.', 'error');
       throw err;
     }
-  }, []);
+  }, [showToast]);
 
   const deleteUserAPI = useCallback(async (id: string | number) => {
     try {
@@ -124,11 +127,13 @@ export function useAuth(showToast?: (message: string, type: 'success' | 'error')
         .delete()
         .eq('id', id);
       if (error) throw error;
+      if (showToast) showToast('Usuário removido com sucesso!', 'success');
     } catch (err) {
       console.error('[useAuth] deleteUserAPI error:', err);
+      if (showToast) showToast('Erro ao remover usuário.', 'error');
       throw err;
     }
-  }, []);
+  }, [showToast]);
 
   return {
     isAuthenticated,

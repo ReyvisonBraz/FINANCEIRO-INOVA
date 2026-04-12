@@ -96,24 +96,32 @@ export const ServiceOrderForm: React.FC<ServiceOrderFormProps> = ({
     value: ''
   });
 
-  const handleQuickAdd = () => {
+  const handleQuickAdd = async () => {
     if (!quickAddModal.value.trim()) return;
     
-    if (quickAddModal.type === 'type') {
-      onAddEquipmentType(quickAddModal.value.trim());
-      setNewOrder({ ...newOrder, equipmentType: quickAddModal.value.trim(), equipmentBrand: '', equipmentModel: '' });
-    } else if (quickAddModal.type === 'brand') {
-      onAddBrand(quickAddModal.value.trim(), newOrder.equipmentType);
-      setNewOrder({ ...newOrder, equipmentBrand: quickAddModal.value.trim(), equipmentModel: '' });
-    } else if (quickAddModal.type === 'model') {
-      const brand = brands.find(b => b.name === newOrder.equipmentBrand);
-      if (brand) {
-        onAddModel(brand.id, quickAddModal.value.trim());
-        setNewOrder({ ...newOrder, equipmentModel: quickAddModal.value.trim() });
+    try {
+      if (quickAddModal.type === 'type') {
+        await onAddEquipmentType(quickAddModal.value.trim());
+        setNewOrder({ ...newOrder, equipmentType: quickAddModal.value.trim(), equipmentBrand: '', equipmentModel: '' });
+        showToast(`Tipo "${quickAddModal.value.trim()}" adicionado!`, 'success');
+      } else if (quickAddModal.type === 'brand') {
+        await onAddBrand(quickAddModal.value.trim(), newOrder.equipmentType);
+        setNewOrder({ ...newOrder, equipmentBrand: quickAddModal.value.trim(), equipmentModel: '' });
+        showToast(`Marca "${quickAddModal.value.trim()}" adicionada!`, 'success');
+      } else if (quickAddModal.type === 'model') {
+        const brand = brands.find(b => b.name === newOrder.equipmentBrand);
+        if (brand) {
+          await onAddModel(brand.id, quickAddModal.value.trim());
+          setNewOrder({ ...newOrder, equipmentModel: quickAddModal.value.trim() });
+          showToast(`Modelo "${quickAddModal.value.trim()}" adicionado!`, 'success');
+        }
       }
+      
+      setQuickAddModal({ ...quickAddModal, isOpen: false, value: '' });
+    } catch (err) {
+      console.error('Erro ao adicionar:', err);
+      showToast('Erro ao adicionar. Tente novamente.', 'error');
     }
-    
-    setQuickAddModal({ ...quickAddModal, isOpen: false, value: '' });
   };
 
   React.useEffect(() => {

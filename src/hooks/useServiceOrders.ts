@@ -3,6 +3,16 @@ import { useServiceOrderStore } from '../store/useServiceOrderStore';
 import { useFilterStore } from '../store/useFilterStore';
 import { supabase } from '../lib/supabase';
 
+const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
+  if (!str) return fallback;
+  if (typeof str !== 'string') return str;
+  try {
+    return JSON.parse(str);
+  } catch {
+    return fallback;
+  }
+};
+
 export const useServiceOrders = () => {
   const {
     serviceOrders, setServiceOrders,
@@ -80,8 +90,8 @@ export const useServiceOrders = () => {
         status: o.status,
         technicalAnalysis: o.technical_analysis,
         servicesPerformed: o.services_performed,
-        services: typeof o.services === 'string' ? JSON.parse(o.services || '[]') : (o.services || []),
-        partsUsed: typeof o.parts_used === 'string' ? JSON.parse(o.parts_used || '[]') : (o.parts_used || []),
+        services: safeJsonParse(o.services, []),
+        partsUsed: safeJsonParse(o.parts_used, []),
         serviceFee: o.service_fee,
         totalAmount: o.total_amount,
         finalObservations: o.final_observations,
